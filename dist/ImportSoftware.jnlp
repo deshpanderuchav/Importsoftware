@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<jnlp spec="1.0" xmlns:jfx="http://javafx.com" href="ImportSoftware.jnlp">
+  <information>
+    <title>ImportSoftware</title>
+    <vendor>Rucha Deshpande</vendor>
+    <description>null</description>
+    <offline-allowed/>
+  </information>
+  <resources>
+    <j2se version="1.6+" href="http://java.sun.com/products/autodl/j2se"/>
+    <jar href="ImportSoftware.jar" size="374205" download="eager" />
+    <jar href="lib/antlr-runtime-3.4.jar" size="164368" download="eager" />
+    <jar href="lib/asm-all-repackaged-2.2.0-b21.jar" size="315378" download="eager" />
+    <jar href="lib/cglib-2.2.0-b21.jar" size="278384" download="eager" />
+    <jar href="lib/connector-api-1.5.jar" size="36479" download="eager" />
+    <jar href="lib/eclipselink.jar" size="8384130" download="eager" />
+    <jar href="lib/guava-14.0.1.jar" size="2138740" download="eager" />
+    <jar href="lib/hk2-api-2.2.0-b21.jar" size="128532" download="eager" />
+    <jar href="lib/hk2-locator-2.2.0-b21.jar" size="144556" download="eager" />
+    <jar href="lib/hk2-utils-2.2.0-b21.jar" size="65884" download="eager" />
+    <jar href="lib/javax.annotation-api-1.2.jar" size="26290" download="eager" />
+    <jar href="lib/javax.inject-2.2.0-b21.jar" size="5979" download="eager" />
+    <jar href="lib/javax.mail-1.5.2.jar" size="571102" download="eager" />
+    <jar href="lib/javax.servlet-api-3.0.1.jar" size="84890" download="eager" />
+    <jar href="lib/javax.ws.rs-api-2.0.jar" size="109582" download="eager" />
+    <jar href="lib/jaxb-api-2.2.7.jar" size="99324" download="eager" />
+    <jar href="lib/jaybird-full-2.2.6.jar" size="903181" download="eager" />
+    <jar href="lib/jersey-client.jar" size="155392" download="eager" />
+    <jar href="lib/jersey-common.jar" size="682628" download="eager" />
+    <jar href="lib/jersey-container-servlet-core.jar" size="52163" download="eager" />
+    <jar href="lib/jersey-container-servlet.jar" size="15084" download="eager" />
+    <jar href="lib/jersey-entity-filtering-2.5.1.jar" size="61769" download="eager" />
+    <jar href="lib/jersey-media-moxy-2.5.1.jar" size="23858" download="eager" />
+    <jar href="lib/jersey-server.jar" size="805547" download="eager" />
+    <jar href="lib/log4j-api-2.0.jar" size="118286" download="eager" />
+    <jar href="lib/log4j-core-2.0.jar" size="781279" download="eager" />
+    <jar href="lib/log4j-core.jar" size="66624" download="eager" />
+    <jar href="lib/org.osgi.core-4.2.0.jar" size="242965" download="eager" />
+    <jar href="lib/osgi-resource-locator-1.0.1.jar" size="20017" download="eager" />
+    <jar href="lib/persistence-api-1.0.jar" size="51902" download="eager" />
+    <jar href="lib/rxtx_2.2.0.pre2.jar" size="63304" download="eager" />
+    <jar href="lib/tomcat-juli.jar" size="41176" download="eager" />
+    <jar href="lib/tomcat-util.jar" size="101901" download="eager" />
+    <jar href="lib/tomcat-websocket.jar" size="201474" download="eager" />
+    <jar href="lib/validation-api-1.1.0.Final.jar" size="63545" download="eager" />
+    <jar href="lib/websocket-api.jar" size="36637" download="eager" />
+  </resources>
+  <applet-desc  width="800" height="600" main-class="com.javafx.main.NoJavaFXFallback"  name="ImportSoftware" >
+    <param name="requiredFXVersion" value="8.0+"/>
+  </applet-desc>
+  <jfx:javafx-desc  width="800" height="600" main-class="com.liconic.stages.ImportStage"  name="ImportSoftware" />
+  <update check="always"/>
+</jnlp>

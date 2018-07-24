@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<Parameters xmlns="http://liconic.com/binding/conffile">
+
+<ParameterGroup>
+  <Name>DataBase</Name>
+  <Parameter>
+    <Name>Driver</Name>
+    <Value>org.firebirdsql.jdbc.FBDriver</Value>
+  </Parameter>
+  <Parameter>
+  <Name>URL</Name>
+  <Value>jdbc:firebirdsql://localhost:3050/C:/Liconic/DB/STXDRV.GDB</Value>
+  </Parameter>
+
+  <Parameter>
+  <Name>Host</Name>
+  <Value>localhost</Value>
+  </Parameter>
+
+  <Parameter>
+  <Name>DataBase</Name>
+  <Value>C:/Liconic/DB/STXDRV.GDB</Value>
+  </Parameter>
+
+
+</ParameterGroup>
+
+
+
+<ParameterGroup>
+  <Name>TCPServer</Name>
+
+  <Parameter>
+    <Name>Address</Name>
+    <Value>127.0.0.1</Value>
+  </Parameter>
+
+  <Parameter>
+    <Name>port</Name>
+    <Value>3334</Value>
+  </Parameter>
+
+
+</ParameterGroup>
+
+
+<ParameterGroup>
+  <Name>Scheduler</Name>
+    <Parameter>
+      <Name>WsURI</Name>
+      <Value>ws://localhost:8080/Scheduler/wsmessages</Value>
+    </Parameter>
+    <Parameter>
+      <Name>WebServices</Name>
+      <Value>http://localhost:8080/Scheduler/webresources</Value>
+    </Parameter>
+</ParameterGroup>
+
+<ParameterGroup>
+  <Name>Labware</Name>
+
+  <ParameterGroup>  
+
+    <Parameter>
+      <Name>Partition</Name>
+      <Value>B</Value>
+    </Parameter>
+
+    <Parameter>
+      <Name>TubeType</Name>
+      <Value>Matrix 0.5</Value>
+    </Parameter>
+
+  </ParameterGroup>
+
+  <ParameterGroup>  
+
+    <Parameter>
+      <Name>Partition</Name>
+      <Value>C</Value>
+    </Parameter>
+
+    <Parameter>
+      <Name>TubeType</Name>
+      <Value>Matrix 0.2</Value>
+    </Parameter>
+
+    <Parameter>
+      <Name>TubeType</Name>
+      <Value>FluidX 0.3</Value>
+    </Parameter>
+
+  </ParameterGroup>
+
+</ParameterGroup>
+
+<ParameterGroup>
+  <Name>1DScanner</Name>
+    <Parameter>
+      <Name>Port</Name>
+      <Value>COM14</Value>
+    </Parameter>
+</ParameterGroup>
+
+
+</Parameters>
+

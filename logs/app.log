@@ -1,0 +1,40 @@
+11:35:37,130  INFO (ImportStage.java:271) - RUN: 03.07.2018
+11:35:37,188  INFO (ImportStage.java:1077) - Read Config file: C:\Liconic Docs\Sources\ImportSoftware\ImportConfig.xml
+11:35:37,527  INFO (ImportStage.java:1092) -    DataBase
+11:35:37,528  INFO (ImportStage.java:1102) -       Driver=org.firebirdsql.jdbc.FBDriver
+11:35:37,529  INFO (ImportStage.java:1122) -       DB_URL=jdbc:firebirdsql://null:3050/null
+11:35:37,530  INFO (ImportStage.java:1106) -       URL=jdbc:firebirdsql://localhost:3050/C:/Liconic/DB/STXDRV.GDB
+11:35:37,530  INFO (ImportStage.java:1122) -       DB_URL=jdbc:firebirdsql://null:3050/null
+11:35:37,531  INFO (ImportStage.java:1110) -       Host=localhost
+11:35:37,531  INFO (ImportStage.java:1122) -       DB_URL=jdbc:firebirdsql://localhost:3050/null
+11:35:37,532  INFO (ImportStage.java:1114) -       DataBase=C:/Liconic/DB/STXDRV.GDB
+11:35:37,532  INFO (ImportStage.java:1122) -       DB_URL=jdbc:firebirdsql://localhost:3050/C:/Liconic/DB/STXDRV.GDB
+11:35:37,533  INFO (ImportStage.java:1128) -    Scheduler
+11:35:37,533  INFO (ImportStage.java:1139) -       WsURI=ws://localhost:8080/Scheduler/wsmessages
+11:35:37,534  INFO (ImportStage.java:1144) -       WebServices=http://localhost:8080/Scheduler/webresources
+11:35:37,534  INFO (ImportStage.java:1154) -    Labware
+11:35:37,535  INFO (ImportStage.java:1166) -       Partition=B
+11:35:37,537  INFO (ImportStage.java:1171) -          TubeType=Matrix 0.5
+11:35:37,537  INFO (ImportStage.java:1166) -       Partition=C
+11:35:37,538  INFO (ImportStage.java:1171) -          TubeType=Matrix 0.2
+11:35:37,540  INFO (ImportStage.java:1171) -          TubeType=FluidX 0.3
+11:35:37,540  INFO (ImportStage.java:1183) -    1DScanner
+11:35:37,541  INFO (ImportStage.java:1192) -       Port=COM14
+11:35:38,202 ERROR (DM.java:119) - getUser: GDS Exception. 335544472. Your user name and password are not defined. Ask your database administrator to set up a Firebird login.  HY000, Login: Rucha Deshpande
+11:36:01,649  INFO (LoginStage.java:200) - Login: User name=ADMIN
+11:36:02,167 ERROR (DataLogicBCReader.java:144) - Barcode open port: null
+11:36:04,094  INFO (DM.java:434) - User has access to: Buffer
+11:36:04,094  INFO (DM.java:434) - User has access to: C
+11:36:04,095  INFO (DM.java:434) - User has access to: Exception
+11:36:04,096  INFO (DM.java:434) - User has access to: B
+11:36:06,839  INFO (DBEventNotifier.java:60) - DB Event listener PLATELINKLEVEL created
+11:36:06,845  INFO (DBEventNotifier.java:92) - DB Event listener BUFFER created
+11:36:06,852  INFO (DBEventNotifier.java:125) - DB Event listener SAFE_AREA created
+11:36:08,138  INFO (WebsocketClientEndpoint.java:43) - Opening websocket
+11:36:08,162  INFO (ImportStage.java:1051) - Started
+11:36:08,635  INFO (WebsocketClientEndpoint.java:51) - Closing websocket
+11:36:14,086  INFO (WebsocketClientEndpoint.java:43) - Opening websocket
+11:36:14,097  INFO (WebsocketClientEndpoint.java:51) - Closing websocket
+11:45:56,789  INFO (WebsocketClientEndpoint.java:43) - Opening websocket
+11:45:56,795  INFO (WebsocketClientEndpoint.java:51) - Closing websocket
+11:45:59,396 ERROR (DataLogicBCReader.java:152) - Barcode close port: null
