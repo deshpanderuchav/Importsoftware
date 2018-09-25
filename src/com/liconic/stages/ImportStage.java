@@ -35,6 +35,7 @@ import com.liconic.timers.LogOutTimer;
 import com.liconic.user.User;
 import com.liconic.timers.WarmUpTimer;
 import com.liconic.wsclient.WebsocketClientEndpoint;
+
 import java.io.File;
 import java.io.StringReader;
 import java.net.URI;
@@ -44,7 +45,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;	  
+import java.util.Optional;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
@@ -80,17 +81,12 @@ import javafx.scene.control.Tooltip;
 import javafx.scene.control.TreeItem;
 import javafx.scene.control.TreeTableCell;
 import javafx.scene.control.TreeTableColumn;
-import javafx.scene.control.TreeTableRow;
 import javafx.scene.control.TreeTableView;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.cell.TreeItemPropertyValueFactory;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.input.ClipboardContent;
 import javafx.scene.input.DataFormat;
-import javafx.scene.input.DragEvent;
-import javafx.scene.input.Dragboard;
-import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
@@ -103,11 +99,8 @@ import javafx.util.Callback;
 import javax.swing.JOptionPane;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.Unmarshaller;
-import static jdk.nashorn.internal.objects.NativeRegExp.source;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import javafx.scene.input.MouseEvent;
-import javafx.scene.input.TransferMode;
 
 public class ImportStage extends Application {
 
@@ -157,6 +150,7 @@ public class ImportStage extends Application {
     private MenuBar menuBar;
     private Menu menuFile;
     private Menu menuConnect;
+    private Menu menuJobs;
     private Menu menuTools;
 
     // ToolBar Buttons
@@ -333,7 +327,7 @@ public class ImportStage extends Application {
     @Override
     public void start(Stage primaryStage) {
 
-// Create Icons
+        // Create Icons
         IconCass = new Image("images/cass.png");
         IconLvl = new Image("images/level.png");
         IconPlate = new Image("images/plate.png");
@@ -426,6 +420,50 @@ public class ImportStage extends Application {
         MenuItem miConnect = new MenuItem("Connect to scheduler");
         MenuItem miUpdateContent = new MenuItem("Update content");
         menuConnect.getItems().addAll(miConnect, new SeparatorMenuItem(), miUpdateContent);
+
+        // Jobs menu
+        menuJobs = new Menu("Jobs");
+        Menu mInventory = new Menu("Inventory");
+        MenuItem mPartition = new MenuItem("Partition");
+        MenuItem mDefinedCassettes = new MenuItem("Defined Cassettes");
+        MenuItem mDefinedPlate = new MenuItem("Defined Plate");
+
+        mPartition.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent t) {
+                InventoryStage inventoryForm = new InventoryStage(importStage, log, WEB_SERVICES_URI, InventoryStage.INVENTORY_TYPE_PARTITION);
+                inventoryForm.initModality(Modality.WINDOW_MODAL);
+                inventoryForm.initOwner(scene.getWindow());
+                inventoryForm.setTitle("Setup Inventory Of Partition");
+                inventoryForm.show();
+            }
+        });
+
+        mDefinedCassettes.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent t) {
+                InventoryStage inventoryForm = new InventoryStage(importStage, log, WEB_SERVICES_URI, InventoryStage.INVENTORY_TYPE_DEFINED_CASSETTES);
+                inventoryForm.initModality(Modality.WINDOW_MODAL);
+                inventoryForm.initOwner(scene.getWindow());
+                inventoryForm.setTitle("Setup Inventory Of Defined Cassettes");
+                inventoryForm.show();
+            }
+        });
+
+        mDefinedPlate.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent t) {
+                InventoryStage inventoryForm = new InventoryStage(importStage, log, WEB_SERVICES_URI, InventoryStage.INVENTORY_TYPE_DEFINED_PLATE);
+                inventoryForm.initModality(Modality.WINDOW_MODAL);
+                inventoryForm.initOwner(scene.getWindow());
+                inventoryForm.setTitle("Setup Inventory Of Defined Plate");
+                inventoryForm.show();
+            }
+        });
+
+        mInventory.getItems().addAll(mPartition, new SeparatorMenuItem(), mDefinedCassettes, new SeparatorMenuItem(), mDefinedPlate);
+        menuJobs.getItems().addAll(mInventory);
+
         /*        
         miLogOut.setOnAction(new EventHandler<ActionEvent>() {
  
@@ -435,7 +473,6 @@ public class ImportStage extends Application {
             }
         });
          */
-
         miUpdateContent.setOnAction(new EventHandler<ActionEvent>() {
 
             @Override
@@ -495,7 +532,7 @@ public class ImportStage extends Application {
 
         menuTools.getItems().addAll(miSettings, new SeparatorMenuItem(), miImportPlate);
 
-        menuBar.getMenus().addAll(menuFile, menuTools, menuConnect);
+        menuBar.getMenus().addAll(menuFile, menuTools, menuConnect, menuJobs);
 
         toolBarContentPane.setTop(menuBar);
 
@@ -595,8 +632,8 @@ public class ImportStage extends Application {
             String UName = System.getProperty("user.name");
             String UPassword = UName.toLowerCase();
 
-//            UName = "ADMIN";
-//            UPassword = "test";            
+            // UName = "ADMIN";
+            // UPassword = "test";
             dm = new DM(DB_DRIVER, DB_URL, UName, UPassword, log);
 
             UserName = UName;
@@ -1778,7 +1815,8 @@ public class ImportStage extends Application {
         return importPropertiesTableView;
 
     }
- private static final DataFormat SERIALIZED_MIME_TYPE = new DataFormat("application/x-java-serialized-object");
+    private static final DataFormat SERIALIZED_MIME_TYPE = new DataFormat("application/x-java-serialized-object");
+
     private TableView CreateExportHistoryTableView() {
 
         TableColumn statusColumn;
@@ -1824,7 +1862,6 @@ public class ImportStage extends Application {
         TreeTableColumn statusColumn;
 
         TreeTableColumn noteExportColumn;
-        
 
         idColumn = new TreeTableColumn<>("Id");
         idColumn.setEditable(false);
@@ -1903,12 +1940,11 @@ public class ImportStage extends Application {
         noteExportColumn.setMinWidth(200);
         noteExportColumn.setCellValueFactory(new TreeItemPropertyValueFactory("note"));
         noteExportColumn.setCellFactory(new ExportTaskCellFactory());
-        
+
         ExportRootItem = dm.getExportTaskList(user.getUserID());
 
         exportTreeTableView = new TreeTableView(ExportRootItem);
-       
-          
+
         exportTreeTableView.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<TreeItem>() {
 
             @Override
@@ -1917,7 +1953,7 @@ public class ImportStage extends Application {
                 if (selectedItem != null) {
 
                     System.out.println(((ExportTaskTableModel) selectedItem.getValue()).getTask() + " - " + ((ExportTaskTableModel) selectedItem.getValue()).getIdTask());
-                   
+
                     if (((ExportTaskTableModel) selectedItem.getValue()).getIdTask() > 0) {
 
                         DrawExpotTaskHistory(((ExportTaskTableModel) selectedItem.getValue()).getIdTask());
@@ -1938,7 +1974,7 @@ public class ImportStage extends Application {
         exportTreeTableView.setEditable(false);
         exportTreeTableView.setPlaceholder(new Text(""));
         exportTreeTableView.getStylesheets().add("style/stylesTaskTree.css");
-       
+
         exportTreeTableView.getColumns().addAll(idColumn, taskColumn, statusColumn, noteExportColumn);
 
         MenuItem menuCancelExport = new MenuItem("Cancel");
@@ -1947,10 +1983,8 @@ public class ImportStage extends Application {
         Fnclient fn = new Fnclient(WEB_SERVICES_URI, log);
         SeparatorMenuItem separatorMenuItem = new SeparatorMenuItem();
         MenuItem menuSequenceExport = new MenuItem("Set Sequence");
-     
-        
-        
-       menuCancelExport.setOnAction(new EventHandler<ActionEvent>() {
+
+        menuCancelExport.setOnAction(new EventHandler<ActionEvent>() {
 
             @Override
             public void handle(ActionEvent t) {
@@ -1995,77 +2029,71 @@ public class ImportStage extends Application {
             }
         });
 
-        ContextMenu contextMenuCancelTask = new ContextMenu(menuCancelExport, separatorMenuItem, menuSequenceExport,menuContinue, menusuperP);
-       // contextMenuCancelTask.getItems().add(menuCancelExport);
-      //  contextMenuCancelTask.getItems().add(menuContinue);
-      //  contextMenuCancelTask.getItems().add(menusuperP);
-        
-		
-contextMenuCancelTask.setOnShowing(new EventHandler<WindowEvent>() {
+        ContextMenu contextMenuCancelTask = new ContextMenu(menuCancelExport, separatorMenuItem, menuSequenceExport, menuContinue, menusuperP);
+        // contextMenuCancelTask.getItems().add(menuCancelExport);
+        //  contextMenuCancelTask.getItems().add(menuContinue);
+        //  contextMenuCancelTask.getItems().add(menusuperP);
+
+        contextMenuCancelTask.setOnShowing(new EventHandler<WindowEvent>() {
 
             @Override
             public void handle(WindowEvent event) {
 
-              if (((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdJob() != 0) {  
-                  int jobId = ((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdJob();
-                    
+                if (((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdJob() != 0) {
+                    int jobId = ((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdJob();
+
                     menuCancelExport.setDisable(false);
                     separatorMenuItem.setDisable(false);
-                    
-                    if(dm.canSetSequence(jobId)){
-                        
+
+                    if (dm.canSetSequence(jobId)) {
+
                         menuSequenceExport.setDisable(false);
-                                                    
-                    }else{
+
+                    } else {
                         menuSequenceExport.setDisable(true);
-						
-                }
-              }else {
+
+                    }
+                } else {
                     menuCancelExport.setDisable(true);
                 }
-				  
-                  
-                    if (((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdJob() != 0) {
-                        int idJob = ((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdJob();
-                        String status = dm.getStatus(idJob);
-                    if (status.equals("Waiting")){ 
+
+                if (((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdJob() != 0) {
+                    int idJob = ((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdJob();
+                    String status = dm.getStatus(idJob);
+                    if (status.equals("Waiting")) {
                         menusuperP.setDisable(false);
+                    } else {
+                        menusuperP.setDisable(true);
                     }
-                    else{
-                          menusuperP.setDisable(true);
-                    }
-               }
-			   else {
+                } else {
                     menuCancelExport.setDisable(true);
                     separatorMenuItem.setDisable(true);
                     menuSequenceExport.setDisable(true);
-			   }
-                    
-                    
+                }
+
                 if (((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdJob() != 0) {
-                   
-                        
-                        int v = -1;
-                        int id = ((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdJob();
-                        int taskId = dm.getTaskId(id);
-                           
-                      try {
-                          
-                       v  = fn.checkContinue(taskId);                          
-                      } catch (Exception ex) {
+
+                    int v = -1;
+                    int id = ((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdJob();
+                    int taskId = dm.getTaskId(id);
+
+                    try {
+
+                        v = fn.checkContinue(taskId);
+                    } catch (Exception ex) {
                         System.out.println("Check continue eligibility: " + ex.getMessage());
-                      }
-                      
-                      if(v == 1){
-                          menuContinue.setDisable(false);
-                      }
-                      else
-                          menuContinue.setDisable(true);                     
                     }
-                else
-                      menuContinue.setDisable(true);
+
+                    if (v == 1) {
+                        menuContinue.setDisable(false);
+                    } else {
+                        menuContinue.setDisable(true);
+                    }
+                } else {
+                    menuContinue.setDisable(true);
+                }
             }
-                });
+        });
         menuContinue.setOnAction(new EventHandler<ActionEvent>() {
 
             @Override
@@ -2076,23 +2104,22 @@ contextMenuCancelTask.setOnShowing(new EventHandler<WindowEvent>() {
                     try {
 
                         Fnclient fn = new Fnclient(WEB_SERVICES_URI, log);
-                      int status = fn.continuePick(((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdTask());
+                        int status = fn.continuePick(((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdTask());
 
-                      if(status != 200){
-                          
+                        if (status != 200) {
+
                             Alert alert = new Alert(AlertType.ERROR);
                             alert.setTitle("Error");
                             alert.setHeaderText("Error of continue Pick job");
-                            alert.setContentText("Status:"+status);
+                            alert.setContentText("Status:" + status);
 
                             alert.showAndWait();
 
                         } else {
-                          
-                      }
+
+                        }
 
                     } catch (Exception E) {
-
                         Alert alert = new Alert(AlertType.ERROR);
                         alert.setTitle("Error");
                         alert.setHeaderText("Error of continue Pick job");
@@ -2105,8 +2132,8 @@ contextMenuCancelTask.setOnShowing(new EventHandler<WindowEvent>() {
 
             }
         });
-		
-		  menuSequenceExport.setOnAction(new EventHandler<ActionEvent>() {
+
+        menuSequenceExport.setOnAction(new EventHandler<ActionEvent>() {
 
             @Override
             public void handle(ActionEvent t) {
@@ -2114,12 +2141,11 @@ contextMenuCancelTask.setOnShowing(new EventHandler<WindowEvent>() {
                 if (((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdJob() != 0) {
 
                     try {
-																																																																												  
 
                         int jobId = ((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdJob();
 
                         int sequence = dm.getJobSequence(jobId);
-                                                
+
                         TextInputDialog dialog = new TextInputDialog(String.valueOf(sequence));
                         dialog.setTitle("Pick Job Sequence");
                         dialog.setHeaderText("Enter a Pick Job Sequence");
@@ -2127,18 +2153,15 @@ contextMenuCancelTask.setOnShowing(new EventHandler<WindowEvent>() {
 
                         // Traditional way to get the response value.
                         Optional<String> result = dialog.showAndWait();
-                        
-                        if (result.isPresent()){
-                            
+
+                        if (result.isPresent()) {
+
                             sequence = Integer.valueOf(result.get());
-                            
+
                             SchedulerClient client = new SchedulerClient(WEB_SERVICES_URI, log);
-                            
+
                             client.setSequence(jobId, sequence);
                         }
-     
-
-						  
 
                     } catch (Exception E) {
 
@@ -2153,22 +2176,20 @@ contextMenuCancelTask.setOnShowing(new EventHandler<WindowEvent>() {
 
                 }
 
-
             }
-        });        
-        
-        
-     menusuperP.setOnAction(new EventHandler<ActionEvent>() {
+        });
+
+        menusuperP.setOnAction(new EventHandler<ActionEvent>() {
 
             @Override
             public void handle(ActionEvent t) {
 
-                   if (((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdJob() != 0) {
+                if (((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdJob() != 0) {
 
                     try {
                         int status = fn.superP(((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdJob(), UserName);
 
-                       if(status != 200){
+                        if (status != 200) {
 
                             Alert alert = new Alert(AlertType.ERROR);
                             alert.setTitle("Error");
@@ -2177,34 +2198,29 @@ contextMenuCancelTask.setOnShowing(new EventHandler<WindowEvent>() {
 
                             alert.showAndWait();
 
-                        } 
+                        }
 
                     } catch (Exception E) {
 
-                       Alert alert = new Alert(AlertType.ERROR);
-                            alert.setTitle("Error");
-                            alert.setHeaderText("Error of running the Super priority Job");
-                            alert.setContentText(E.getMessage());
+                        Alert alert = new Alert(AlertType.ERROR);
+                        alert.setTitle("Error");
+                        alert.setHeaderText("Error of running the Super priority Job");
+                        alert.setContentText(E.getMessage());
 
-                            alert.showAndWait();
+                        alert.showAndWait();
 
                     }
 
                 }
 
-
             }
         });
-             
-             
-    
 
         exportTreeTableView.setContextMenu(contextMenuCancelTask);
 
         return exportTreeTableView;
 
     }
-    
 
     private TableView CreateExportContentTable() {
 
@@ -2311,7 +2327,7 @@ contextMenuCancelTask.setOnShowing(new EventHandler<WindowEvent>() {
         exportRacksTable.getColumns().addAll(plateBCColumn, deviceColumn, partitionColumn, cassetteColumn, levelColumn);
 
         MenuItem menuRunExport = new MenuItem("Export Rack");
-       // MenuItem menuExportJob = new MenuItem("Export Job");
+        // MenuItem menuExportJob = new MenuItem("Export Job");
         menuRunExport.setOnAction(new EventHandler<ActionEvent>() {
 
             @Override
@@ -2332,7 +2348,7 @@ contextMenuCancelTask.setOnShowing(new EventHandler<WindowEvent>() {
             }
         });
 
- /*       menuExportJob.setOnAction(new EventHandler<ActionEvent>() {
+        /*       menuExportJob.setOnAction(new EventHandler<ActionEvent>() {
 
             @Override
             public void handle(ActionEvent t) {
@@ -2351,9 +2367,8 @@ contextMenuCancelTask.setOnShowing(new EventHandler<WindowEvent>() {
 
             }
         });*/
-        
         ContextMenu contextExport = new ContextMenu();
-    //    contextExport.getItems().add(menuExportJob);
+        //    contextExport.getItems().add(menuExportJob);
         contextExport.getItems().add(menuRunExport);
         exportRacksTable.setContextMenu(contextExport);
 //        exportRacksTable.setContextMenu(new ContextMenu(menuRunExport));

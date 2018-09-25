@@ -1,40 +1,128 @@
-11:35:37,130  INFO (ImportStage.java:271) - RUN: 03.07.2018
-11:35:37,188  INFO (ImportStage.java:1077) - Read Config file: C:\Liconic Docs\Sources\ImportSoftware\ImportConfig.xml
-11:35:37,527  INFO (ImportStage.java:1092) -    DataBase
-11:35:37,528  INFO (ImportStage.java:1102) -       Driver=org.firebirdsql.jdbc.FBDriver
-11:35:37,529  INFO (ImportStage.java:1122) -       DB_URL=jdbc:firebirdsql://null:3050/null
-11:35:37,530  INFO (ImportStage.java:1106) -       URL=jdbc:firebirdsql://localhost:3050/C:/Liconic/DB/STXDRV.GDB
-11:35:37,530  INFO (ImportStage.java:1122) -       DB_URL=jdbc:firebirdsql://null:3050/null
-11:35:37,531  INFO (ImportStage.java:1110) -       Host=localhost
-11:35:37,531  INFO (ImportStage.java:1122) -       DB_URL=jdbc:firebirdsql://localhost:3050/null
-11:35:37,532  INFO (ImportStage.java:1114) -       DataBase=C:/Liconic/DB/STXDRV.GDB
-11:35:37,532  INFO (ImportStage.java:1122) -       DB_URL=jdbc:firebirdsql://localhost:3050/C:/Liconic/DB/STXDRV.GDB
-11:35:37,533  INFO (ImportStage.java:1128) -    Scheduler
-11:35:37,533  INFO (ImportStage.java:1139) -       WsURI=ws://localhost:8080/Scheduler/wsmessages
-11:35:37,534  INFO (ImportStage.java:1144) -       WebServices=http://localhost:8080/Scheduler/webresources
-11:35:37,534  INFO (ImportStage.java:1154) -    Labware
-11:35:37,535  INFO (ImportStage.java:1166) -       Partition=B
-11:35:37,537  INFO (ImportStage.java:1171) -          TubeType=Matrix 0.5
-11:35:37,537  INFO (ImportStage.java:1166) -       Partition=C
-11:35:37,538  INFO (ImportStage.java:1171) -          TubeType=Matrix 0.2
-11:35:37,540  INFO (ImportStage.java:1171) -          TubeType=FluidX 0.3
-11:35:37,540  INFO (ImportStage.java:1183) -    1DScanner
-11:35:37,541  INFO (ImportStage.java:1192) -       Port=COM14
-11:35:38,202 ERROR (DM.java:119) - getUser: GDS Exception. 335544472. Your user name and password are not defined. Ask your database administrator to set up a Firebird login.  HY000, Login: Rucha Deshpande
-11:36:01,649  INFO (LoginStage.java:200) - Login: User name=ADMIN
-11:36:02,167 ERROR (DataLogicBCReader.java:144) - Barcode open port: null
-11:36:04,094  INFO (DM.java:434) - User has access to: Buffer
-11:36:04,094  INFO (DM.java:434) - User has access to: C
-11:36:04,095  INFO (DM.java:434) - User has access to: Exception
-11:36:04,096  INFO (DM.java:434) - User has access to: B
-11:36:06,839  INFO (DBEventNotifier.java:60) - DB Event listener PLATELINKLEVEL created
-11:36:06,845  INFO (DBEventNotifier.java:92) - DB Event listener BUFFER created
-11:36:06,852  INFO (DBEventNotifier.java:125) - DB Event listener SAFE_AREA created
-11:36:08,138  INFO (WebsocketClientEndpoint.java:43) - Opening websocket
-11:36:08,162  INFO (ImportStage.java:1051) - Started
-11:36:08,635  INFO (WebsocketClientEndpoint.java:51) - Closing websocket
-11:36:14,086  INFO (WebsocketClientEndpoint.java:43) - Opening websocket
-11:36:14,097  INFO (WebsocketClientEndpoint.java:51) - Closing websocket
-11:45:56,789  INFO (WebsocketClientEndpoint.java:43) - Opening websocket
-11:45:56,795  INFO (WebsocketClientEndpoint.java:51) - Closing websocket
-11:45:59,396 ERROR (DataLogicBCReader.java:152) - Barcode close port: null
+08:48:26,969  INFO (ImportStage.java:276) - RUN: 28.08.2018
+08:48:27,044  INFO (ImportStage.java:1118) - Read Config file: C:\Liconic Docs\Sources\ImportSoftware\ImportConfig.xml
+08:48:28,016  INFO (ImportStage.java:1133) -    DataBase
+08:48:28,018  INFO (ImportStage.java:1143) -       Driver=org.firebirdsql.jdbc.FBDriver
+08:48:28,019  INFO (ImportStage.java:1163) -       DB_URL=jdbc:firebirdsql://null:3050/null
+08:48:28,020  INFO (ImportStage.java:1147) -       URL=jdbc:firebirdsql://localhost:3050/C:/Liconic/DB/STXDRV.GDB
+08:48:28,021  INFO (ImportStage.java:1163) -       DB_URL=jdbc:firebirdsql://null:3050/null
+08:48:28,022  INFO (ImportStage.java:1151) -       Host=localhost
+08:48:28,024  INFO (ImportStage.java:1163) -       DB_URL=jdbc:firebirdsql://localhost:3050/null
+08:48:28,026  INFO (ImportStage.java:1155) -       DataBase=C:/Liconic/DB/STXDRV.GDB
+08:48:28,026  INFO (ImportStage.java:1163) -       DB_URL=jdbc:firebirdsql://localhost:3050/C:/Liconic/DB/STXDRV.GDB
+08:48:28,027  INFO (ImportStage.java:1169) -    Scheduler
+08:48:28,028  INFO (ImportStage.java:1180) -       WsURI=ws://localhost:8080/Scheduler/wsmessages
+08:48:28,029  INFO (ImportStage.java:1185) -       WebServices=http://localhost:8080/Scheduler/webresources
+08:48:28,031  INFO (ImportStage.java:1195) -    Labware
+08:48:28,036  INFO (ImportStage.java:1207) -       Partition=B
+08:48:28,040  INFO (ImportStage.java:1212) -          TubeType=Matrix 0.5
+08:48:28,041  INFO (ImportStage.java:1207) -       Partition=C
+08:48:28,042  INFO (ImportStage.java:1212) -          TubeType=Matrix 0.2
+08:48:28,045  INFO (ImportStage.java:1212) -          TubeType=FluidX 0.3
+08:48:28,048  INFO (ImportStage.java:1224) -    1DScanner
+08:48:28,050  INFO (ImportStage.java:1233) -       Port=COM14
+08:48:30,551 ERROR (DM.java:119) - getUser: GDS Exception. 335544472. Your user name and password are not defined. Ask your database administrator to set up a Firebird login.  HY000, Login: Rucha Deshpande
+08:55:08,832  INFO (ImportStage.java:276) - RUN: 28.08.2018
+08:55:08,843  INFO (ImportStage.java:1118) - Read Config file: C:\Liconic Docs\Sources\ImportSoftware\ImportConfig.xml
+08:55:09,261  INFO (ImportStage.java:1133) -    DataBase
+08:55:09,262  INFO (ImportStage.java:1143) -       Driver=org.firebirdsql.jdbc.FBDriver
+08:55:09,263  INFO (ImportStage.java:1163) -       DB_URL=jdbc:firebirdsql://null:3050/null
+08:55:09,264  INFO (ImportStage.java:1147) -       URL=jdbc:firebirdsql://localhost:3050/C:/Liconic/DB/STXDRV.GDB
+08:55:09,266  INFO (ImportStage.java:1163) -       DB_URL=jdbc:firebirdsql://null:3050/null
+08:55:09,267  INFO (ImportStage.java:1151) -       Host=localhost
+08:55:09,268  INFO (ImportStage.java:1163) -       DB_URL=jdbc:firebirdsql://localhost:3050/null
+08:55:09,269  INFO (ImportStage.java:1155) -       DataBase=C:/Liconic/DB/STXDRV.GDB
+08:55:09,270  INFO (ImportStage.java:1163) -       DB_URL=jdbc:firebirdsql://localhost:3050/C:/Liconic/DB/STXDRV.GDB
+08:55:09,274  INFO (ImportStage.java:1169) -    Scheduler
+08:55:09,275  INFO (ImportStage.java:1180) -       WsURI=ws://localhost:8080/Scheduler/wsmessages
+08:55:09,276  INFO (ImportStage.java:1185) -       WebServices=http://localhost:8080/Scheduler/webresources
+08:55:09,278  INFO (ImportStage.java:1195) -    Labware
+08:55:09,281  INFO (ImportStage.java:1207) -       Partition=B
+08:55:09,284  INFO (ImportStage.java:1212) -          TubeType=Matrix 0.5
+08:55:09,286  INFO (ImportStage.java:1207) -       Partition=C
+08:55:09,293  INFO (ImportStage.java:1212) -          TubeType=Matrix 0.2
+08:55:09,302  INFO (ImportStage.java:1212) -          TubeType=FluidX 0.3
+08:55:09,305  INFO (ImportStage.java:1224) -    1DScanner
+08:55:09,313  INFO (ImportStage.java:1233) -       Port=COM14
+08:55:10,948 ERROR (DM.java:119) - getUser: GDS Exception. 335544472. Your user name and password are not defined. Ask your database administrator to set up a Firebird login.  HY000, Login: Rucha Deshpande
+08:55:18,977  INFO (LoginStage.java:200) - Login: User name=ADMIN
+08:55:19,598 ERROR (DataLogicBCReader.java:144) - Barcode open port: null
+08:55:23,128  INFO (DM.java:434) - User has access to: Buffer
+08:55:23,130  INFO (DM.java:434) - User has access to: C
+08:55:23,132  INFO (DM.java:434) - User has access to: Exception
+08:55:23,134  INFO (DM.java:434) - User has access to: B
+08:55:42,899  INFO (DBEventNotifier.java:60) - DB Event listener PLATELINKLEVEL created
+08:55:42,912  INFO (DBEventNotifier.java:92) - DB Event listener BUFFER created
+08:55:42,928  INFO (DBEventNotifier.java:125) - DB Event listener SAFE_AREA created
+08:55:46,403 ERROR (WebsocketClientEndpoint.java:35) - Create WebSocketContainer: The HTTP request to initiate the WebSocket connection failed
+08:55:46,691  INFO (ImportStage.java:1092) - Started
+08:56:18,569 ERROR (DataLogicBCReader.java:152) - Barcode close port: null
+11:51:39,887  INFO (ImportStage.java:276) - RUN: 28.08.2018
+11:51:39,911  INFO (ImportStage.java:1118) - Read Config file: C:\Liconic Docs\Sources\ImportSoftware\ImportConfig.xml
+11:51:40,849  INFO (ImportStage.java:1133) -    DataBase
+11:51:40,850  INFO (ImportStage.java:1143) -       Driver=org.firebirdsql.jdbc.FBDriver
+11:51:40,853  INFO (ImportStage.java:1163) -       DB_URL=jdbc:firebirdsql://null:3050/null
+11:51:40,856  INFO (ImportStage.java:1147) -       URL=jdbc:firebirdsql://localhost:3050/C:/Liconic/DB/STXDRV.GDB
+11:51:40,857  INFO (ImportStage.java:1163) -       DB_URL=jdbc:firebirdsql://null:3050/null
+11:51:40,858  INFO (ImportStage.java:1151) -       Host=localhost
+11:51:40,859  INFO (ImportStage.java:1163) -       DB_URL=jdbc:firebirdsql://localhost:3050/null
+11:51:40,860  INFO (ImportStage.java:1155) -       DataBase=C:/Liconic/DB/STXDRV.GDB
+11:51:40,861  INFO (ImportStage.java:1163) -       DB_URL=jdbc:firebirdsql://localhost:3050/C:/Liconic/DB/STXDRV.GDB
+11:51:40,861  INFO (ImportStage.java:1169) -    Scheduler
+11:51:40,863  INFO (ImportStage.java:1180) -       WsURI=ws://localhost:8080/Scheduler/wsmessages
+11:51:40,865  INFO (ImportStage.java:1185) -       WebServices=http://localhost:8080/Scheduler/webresources
+11:51:40,866  INFO (ImportStage.java:1195) -    Labware
+11:51:40,869  INFO (ImportStage.java:1207) -       Partition=B
+11:51:40,872  INFO (ImportStage.java:1212) -          TubeType=Matrix 0.5
+11:51:40,873  INFO (ImportStage.java:1207) -       Partition=C
+11:51:40,874  INFO (ImportStage.java:1212) -          TubeType=Matrix 0.2
+11:51:40,876  INFO (ImportStage.java:1212) -          TubeType=FluidX 0.3
+11:51:40,877  INFO (ImportStage.java:1224) -    1DScanner
+11:51:40,878  INFO (ImportStage.java:1233) -       Port=COM14
+11:51:42,974 ERROR (DM.java:119) - getUser: GDS Exception. 335544472. Your user name and password are not defined. Ask your database administrator to set up a Firebird login.  HY000, Login: Rucha Deshpande
+11:58:42,503  INFO (LoginStage.java:200) - Login: User name=ADMIN
+11:58:43,671 ERROR (DataLogicBCReader.java:144) - Barcode open port: null
+11:58:49,429  INFO (DM.java:434) - User has access to: Buffer
+11:58:49,432  INFO (DM.java:434) - User has access to: C
+11:58:49,434  INFO (DM.java:434) - User has access to: Exception
+11:58:49,435  INFO (DM.java:434) - User has access to: B
+11:59:09,541  INFO (DBEventNotifier.java:60) - DB Event listener PLATELINKLEVEL created
+11:59:09,566  INFO (DBEventNotifier.java:92) - DB Event listener BUFFER created
+11:59:09,588  INFO (DBEventNotifier.java:125) - DB Event listener SAFE_AREA created
+11:59:13,439 ERROR (WebsocketClientEndpoint.java:35) - Create WebSocketContainer: The HTTP request to initiate the WebSocket connection failed
+11:59:13,755  INFO (ImportStage.java:1092) - Started
+13:16:49,429 ERROR (DataLogicBCReader.java:152) - Barcode close port: null
+13:17:27,216  INFO (ImportStage.java:276) - RUN: 28.08.2018
+13:17:27,222  INFO (ImportStage.java:1119) - Read Config file: C:\Liconic Docs\Sources\ImportSoftware\ImportConfig.xml
+13:17:27,810  INFO (ImportStage.java:1134) -    DataBase
+13:17:27,811  INFO (ImportStage.java:1144) -       Driver=org.firebirdsql.jdbc.FBDriver
+13:17:27,812  INFO (ImportStage.java:1164) -       DB_URL=jdbc:firebirdsql://null:3050/null
+13:17:27,812  INFO (ImportStage.java:1148) -       URL=jdbc:firebirdsql://localhost:3050/C:/Liconic/DB/STXDRV.GDB
+13:17:27,813  INFO (ImportStage.java:1164) -       DB_URL=jdbc:firebirdsql://null:3050/null
+13:17:27,814  INFO (ImportStage.java:1152) -       Host=localhost
+13:17:27,817  INFO (ImportStage.java:1164) -       DB_URL=jdbc:firebirdsql://localhost:3050/null
+13:17:27,817  INFO (ImportStage.java:1156) -       DataBase=C:/Liconic/DB/STXDRV.GDB
+13:17:27,818  INFO (ImportStage.java:1164) -       DB_URL=jdbc:firebirdsql://localhost:3050/C:/Liconic/DB/STXDRV.GDB
+13:17:27,819  INFO (ImportStage.java:1170) -    Scheduler
+13:17:27,820  INFO (ImportStage.java:1181) -       WsURI=ws://localhost:8080/Scheduler/wsmessages
+13:17:27,821  INFO (ImportStage.java:1186) -       WebServices=http://localhost:8080/Scheduler/webresources
+13:17:27,821  INFO (ImportStage.java:1196) -    Labware
+13:17:27,823  INFO (ImportStage.java:1208) -       Partition=B
+13:17:27,827  INFO (ImportStage.java:1213) -          TubeType=Matrix 0.5
+13:17:27,829  INFO (ImportStage.java:1208) -       Partition=C
+13:17:27,830  INFO (ImportStage.java:1213) -          TubeType=Matrix 0.2
+13:17:27,830  INFO (ImportStage.java:1213) -          TubeType=FluidX 0.3
+13:17:27,831  INFO (ImportStage.java:1225) -    1DScanner
+13:17:27,831  INFO (ImportStage.java:1234) -       Port=COM14
+13:17:30,337 ERROR (DM.java:119) - getUser: GDS Exception. 335544472. Your user name and password are not defined. Ask your database administrator to set up a Firebird login.  HY000, Login: Rucha Deshpande
+13:21:24,581  INFO (LoginStage.java:200) - Login: User name=ADMIN
+13:21:25,345 ERROR (DataLogicBCReader.java:144) - Barcode open port: null
+13:21:30,910  INFO (DM.java:434) - User has access to: Buffer
+13:21:30,911  INFO (DM.java:434) - User has access to: C
+13:21:30,911  INFO (DM.java:434) - User has access to: Exception
+13:21:30,912  INFO (DM.java:434) - User has access to: B
+13:21:49,947  INFO (DBEventNotifier.java:60) - DB Event listener PLATELINKLEVEL created
+13:21:49,961  INFO (DBEventNotifier.java:92) - DB Event listener BUFFER created
+13:21:49,976  INFO (DBEventNotifier.java:125) - DB Event listener SAFE_AREA created
+13:21:53,683 ERROR (WebsocketClientEndpoint.java:35) - Create WebSocketContainer: The HTTP request to initiate the WebSocket connection failed
+13:21:54,000  INFO (ImportStage.java:1093) - Started
+13:28:34,308 ERROR (DataLogicBCReader.java:152) - Barcode close port: null

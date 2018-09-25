@@ -55,6 +55,7 @@ public class ImportClient {
             Cmds cmds = new Cmds();
 
             Cmd cmd = new Cmd();
+            resp = webTarget.request().post(Entity.xml(sys), Sys.class);
 
             cmd.setType(of.createCmdType("ImportFromXfer"));
 

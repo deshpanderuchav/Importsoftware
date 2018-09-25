@@ -11,6 +11,7 @@ package com.liconic.binding.sys;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.annotation.XmlElementDecl;
 import javax.xml.bind.annotation.XmlRegistry;
+import javax.xml.datatype.XMLGregorianCalendar;
 import javax.xml.namespace.QName;
 
 
@@ -69,7 +70,17 @@ public class ObjectFactory {
     private final static QName _SysSysName_QNAME = new QName("http://com.liconic.sys", "sysName");
     private final static QName _DeviceClimate_QNAME = new QName("http://com.liconic.sys", "climate");
     private final static QName _SchedulerCommand_QNAME = new QName("http://com.liconic.sys", "command");
-
+    
+    private final static QName _STXAnswerValue_QNAME = new QName("http://com.liconic.sys", "Value");
+    private final static QName _STXTubePosPUDt_QNAME = new QName("http://com.liconic.sys", "PUDt");
+    private final static QName _STXTubePosInfo_QNAME = new QName("http://com.liconic.sys", "Info");
+    private final static QName _STXTubePosPLDt_QNAME = new QName("http://com.liconic.sys", "PLDt");
+    private final static QName _STXTubePosPIDt_QNAME = new QName("http://com.liconic.sys", "PIDt");
+    private final static QName _STXTubePosPTb_QNAME = new QName("http://com.liconic.sys", "PTb");
+    private final static QName _STXLevelLvlPlt_QNAME = new QName("http://com.liconic.sys", "LvlPlt");
+    private final static QName _STXLevelLvlLoadDate_QNAME = new QName("http://com.liconic.sys", "LvlLoadDate");
+    private final static QName _STXLevelLvlInvDate_QNAME = new QName("http://com.liconic.sys", "LvlInvDate");
+    
     /**
      * Create a new ObjectFactory that can be used to create new instances of schema derived classes for package: com.liconic.binding.sys1
      * 
@@ -299,6 +310,174 @@ public class ObjectFactory {
      */
     public TubePos createTubePos() {
         return new TubePos();
+    }
+    
+    /**
+     * Create an instance of {@link STXCassette }
+     * 
+     */
+    public STXCassette createSTXCassette() {
+        return new STXCassette();
+    }
+
+    /**
+     * Create an instance of {@link STXPlateLocation }
+     * 
+     */
+    public STXPlateLocation createSTXPlateLocation() {
+        return new STXPlateLocation();
+    }
+
+    /**
+     * Create an instance of {@link STXRequest }
+     * 
+     */
+    public STXRequest createSTXRequest() {
+        return new STXRequest();
+    }
+
+    /**
+     * Create an instance of {@link STXParameter }
+     * 
+     */
+    public STXParameter createSTXParameter() {
+        return new STXParameter();
+    }
+
+    /**
+     * Create an instance of {@link STXDeviceError }
+     * 
+     */
+    public STXDeviceError createSTXDeviceError() {
+        return new STXDeviceError();
+    }
+
+    /**
+     * Create an instance of {@link STXDevice }
+     * 
+     */
+    public STXDevice createSTXDevice() {
+        return new STXDevice();
+    }
+
+    /**
+     * Create an instance of {@link STXTubeType }
+     * 
+     */
+    public STXTubeType createSTXTubeType() {
+        return new STXTubeType();
+    }
+
+    /**
+     * Create an instance of {@link STXCmdStatus }
+     * 
+     */
+    public STXCmdStatus createSTXCmdStatus() {
+        return new STXCmdStatus();
+    }
+
+    /**
+     * Create an instance of {@link STXPlateType }
+     * 
+     */
+    public STXPlateType createSTXPlateType() {
+        return new STXPlateType();
+    }
+
+    /**
+     * Create an instance of {@link STXLevel }
+     * 
+     */
+    public STXLevel createSTXLevel() {
+        return new STXLevel();
+    }
+
+    /**
+     * Create an instance of {@link STXCommand }
+     * 
+     */
+    public STXCommand createSTXCommand() {
+        return new STXCommand();
+    }
+
+    /**
+     * Create an instance of {@link STXAnswer }
+     * 
+     */
+    public STXAnswer createSTXAnswer() {
+        return new STXAnswer();
+    }
+
+    /**
+     * Create an instance of {@link STXTube }
+     * 
+     */
+    public STXTube createSTXTube() {
+        return new STXTube();
+    }
+
+    /**
+     * Create an instance of {@link STXRequest.Tubes }
+     * 
+     */
+    public STXRequest.Tubes createSTXRequestTubes() {
+        return new STXRequest.Tubes();
+    }
+
+    /**
+     * Create an instance of {@link STXTransferStation }
+     * 
+     */
+    public STXTransferStation createSTXTransferStation() {
+        return new STXTransferStation();
+    }
+
+    /**
+     * Create an instance of {@link STXUnit }
+     * 
+     */
+    public STXUnit createSTXUnit() {
+        return new STXUnit();
+    }
+
+    /**
+     * Create an instance of {@link STXTubePos }
+     * 
+     */
+    public STXTubePos createSTXTubePos() {
+        return new STXTubePos();
+    }
+
+    /**
+     * Create an instance of {@link STXPlate }
+     * 
+     */
+    public STXPlate createSTXPlate() {
+        return new STXPlate();
+    }
+
+    /**
+     * Create an instance of {@link STXTubePosType }
+     * 
+     */
+    public STXTubePosType createSTXTubePosType() {
+        return new STXTubePosType();
+    }
+
+    /**
+     * Create an instance of {@link STXFolder }
+     * 
+     */
+    public STXFolder createSTXFolder() {
+        return new STXFolder();
+    }
+
+    /**
+     * Create an instance of {@link STXPartition }
+     * 
+     */
+    public STXPartition createSTXPartition() {
+        return new STXPartition();
     }
 
     /**
@@ -821,6 +1000,87 @@ public class ObjectFactory {
     @XmlElementDecl(namespace = "http://com.liconic.sys", name = "commands", scope = Job.class)
     public JAXBElement<Cmds> createJobCommands(Cmds value) {
         return new JAXBElement<Cmds>(_TaskCommands_QNAME, Cmds.class, Job.class, value);
+    }
+    
+     /**
+     * Create an instance of {@link JAXBElement }{@code <}{@link String }{@code >}}
+     * 
+     */
+    @XmlElementDecl(namespace = "http://com.liconic.sys", name = "Value", scope = STXAnswer.class)
+    public JAXBElement<String> createSTXAnswerValue(String value) {
+        return new JAXBElement<String>(_STXAnswerValue_QNAME, String.class, STXAnswer.class, value);
+    }
+
+    /**
+     * Create an instance of {@link JAXBElement }{@code <}{@link XMLGregorianCalendar }{@code >}}
+     * 
+     */
+    @XmlElementDecl(namespace = "http://com.liconic.sys", name = "PUDt", scope = STXTubePos.class)
+    public JAXBElement<XMLGregorianCalendar> createSTXTubePosPUDt(XMLGregorianCalendar value) {
+        return new JAXBElement<XMLGregorianCalendar>(_STXTubePosPUDt_QNAME, XMLGregorianCalendar.class, STXTubePos.class, value);
+    }
+
+    /**
+     * Create an instance of {@link JAXBElement }{@code <}{@link String }{@code >}}
+     * 
+     */
+    @XmlElementDecl(namespace = "http://com.liconic.sys", name = "Info", scope = STXTubePos.class)
+    public JAXBElement<String> createSTXTubePosInfo(String value) {
+        return new JAXBElement<String>(_STXTubePosInfo_QNAME, String.class, STXTubePos.class, value);
+    }
+
+    /**
+     * Create an instance of {@link JAXBElement }{@code <}{@link XMLGregorianCalendar }{@code >}}
+     * 
+     */
+    @XmlElementDecl(namespace = "http://com.liconic.sys", name = "PLDt", scope = STXTubePos.class)
+    public JAXBElement<XMLGregorianCalendar> createSTXTubePosPLDt(XMLGregorianCalendar value) {
+        return new JAXBElement<XMLGregorianCalendar>(_STXTubePosPLDt_QNAME, XMLGregorianCalendar.class, STXTubePos.class, value);
+    }
+
+    /**
+     * Create an instance of {@link JAXBElement }{@code <}{@link XMLGregorianCalendar }{@code >}}
+     * 
+     */
+    @XmlElementDecl(namespace = "http://com.liconic.sys", name = "PIDt", scope = STXTubePos.class)
+    public JAXBElement<XMLGregorianCalendar> createSTXTubePosPIDt(XMLGregorianCalendar value) {
+        return new JAXBElement<XMLGregorianCalendar>(_STXTubePosPIDt_QNAME, XMLGregorianCalendar.class, STXTubePos.class, value);
+    }
+
+    /**
+     * Create an instance of {@link JAXBElement }{@code <}{@link STXTube }{@code >}}
+     * 
+     */
+    @XmlElementDecl(namespace = "http://com.liconic.sys", name = "PTb", scope = STXTubePos.class)
+    public JAXBElement<STXTube> createSTXTubePosPTb(STXTube value) {
+        return new JAXBElement<STXTube>(_STXTubePosPTb_QNAME, STXTube.class, STXTubePos.class, value);
+    }
+
+    /**
+     * Create an instance of {@link JAXBElement }{@code <}{@link STXPlate }{@code >}}
+     * 
+     */
+    @XmlElementDecl(namespace = "http://com.liconic.sys", name = "LvlPlt", scope = STXLevel.class)
+    public JAXBElement<STXPlate> createSTXLevelLvlPlt(STXPlate value) {
+        return new JAXBElement<STXPlate>(_STXLevelLvlPlt_QNAME, STXPlate.class, STXLevel.class, value);
+    }
+
+    /**
+     * Create an instance of {@link JAXBElement }{@code <}{@link XMLGregorianCalendar }{@code >}}
+     * 
+     */
+    @XmlElementDecl(namespace = "http://com.liconic.sys", name = "LvlLoadDate", scope = STXLevel.class)
+    public JAXBElement<XMLGregorianCalendar> createSTXLevelLvlLoadDate(XMLGregorianCalendar value) {
+        return new JAXBElement<XMLGregorianCalendar>(_STXLevelLvlLoadDate_QNAME, XMLGregorianCalendar.class, STXLevel.class, value);
+    }
+
+    /**
+     * Create an instance of {@link JAXBElement }{@code <}{@link XMLGregorianCalendar }{@code >}}
+     * 
+     */
+    @XmlElementDecl(namespace = "http://com.liconic.sys", name = "LvlInvDate", scope = STXLevel.class)
+    public JAXBElement<XMLGregorianCalendar> createSTXLevelLvlInvDate(XMLGregorianCalendar value) {
+        return new JAXBElement<XMLGregorianCalendar>(_STXLevelLvlInvDate_QNAME, XMLGregorianCalendar.class, STXLevel.class, value);
     }
 
 }
