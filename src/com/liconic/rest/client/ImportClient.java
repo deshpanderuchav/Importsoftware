@@ -28,7 +28,7 @@ public class ImportClient {
         }
 
         try {
-            webTarget = client.target(url).path("import");
+            webTarget = client.target(url).path("/xml/import");
         } catch (Exception E) {
             log.error("ImportClient create WebTarget: " + E.getMessage());
         }
@@ -76,7 +76,7 @@ public class ImportClient {
 
     }
 
-    public Sys runImportFromBuffer() {
+    public Sys runImportFromBuffer(String BufferName) {
 
         Sys sys = new Sys();
         Sys resp = null;
@@ -92,6 +92,7 @@ public class ImportClient {
             Cmd cmd = new Cmd();
 
             cmd.setType(of.createCmdType("ImportFromBuffer"));
+            cmd.setValue(of.createCmdValue(BufferName));
 
             cmds.getCmd().add(cmd);
             sys.setCmds(of.createSysCmds(cmds));

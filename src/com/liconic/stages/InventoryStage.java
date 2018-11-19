@@ -23,14 +23,15 @@ public class InventoryStage extends Stage {
 
     public static final String INVENTORY_TYPE_PARTITION = "Partition";
     public static final String INVENTORY_TYPE_DEFINED_CASSETTES = "Defined Cassettes";
-    public static final String INVENTORY_TYPE_DEFINED_PLATE = "Defined Plate";
+    public static final String INVENTORY_TYPE_DEFINED_PLATES = "Defined Plates";
 
     private final ImportStage importStage;
     private final String inventoryType;
     private final Logger log;
     private final Scene scene;
-    private final FileChooser plateFileChooser = new FileChooser();
-    private File plateFile;
+    private final FileChooser platesFileChooser = new FileChooser();
+    private File platesFile;
+    int rowIndex = 0;
 
     // UI fields
     TextField jobIdField = null;
@@ -38,7 +39,8 @@ public class InventoryStage extends Stage {
     TextField firstCassetteField = null;
     TextField lastCassetteField = null;
     TextField deviceField = null;
-    Button bChooseFile = null;
+    Button bChoosePlatesFile = null;
+    Label selectedFileName = null;
     CheckBox scanField = null;
     Button bCancel = null;
     Button bRun = null;
@@ -56,8 +58,6 @@ public class InventoryStage extends Stage {
         grid.setHgap(10);
         grid.setVgap(10);
         grid.setPadding(new Insets(15, 15, 15, 15));
-
-        int rowIndex = 0;
 
         jobIdField = new TextField();
         jobIdField.setPromptText("Job Id");
@@ -93,24 +93,30 @@ public class InventoryStage extends Stage {
             rowIndex++;
         }
 
-        if (INVENTORY_TYPE_DEFINED_PLATE.equals(inventoryType)) {
-            grid.add(new Label("Plate:"), 0, rowIndex);
-            bChooseFile = new Button("Choose file");
-            grid.add(bChooseFile, 1, rowIndex);
-            rowIndex++;
+        scanField = new CheckBox();
+        grid.add(new Label("2D Scan:"), 0, rowIndex);
+        grid.add(scanField, 1, rowIndex);
+        rowIndex++;
 
-            bChooseFile.setOnAction(
+        if (INVENTORY_TYPE_DEFINED_PLATES.equals(inventoryType)) {
+            grid.add(new Label("Plates:"), 0, rowIndex);
+            bChoosePlatesFile = new Button("Choose file");
+            grid.add(bChoosePlatesFile, 1, rowIndex);
+            rowIndex++;
+            final int rowIdx = rowIndex;
+
+            bChoosePlatesFile.setOnAction(
                     new EventHandler<ActionEvent>() {
                 @Override
                 public void handle(final ActionEvent e) {
-                    plateFile = plateFileChooser.showOpenDialog(scene.getWindow());
+                    platesFile = platesFileChooser.showOpenDialog(scene.getWindow());
+                    grid.getChildren().remove(selectedFileName);
+                    selectedFileName = new Label(platesFile.getName());
+                    grid.add(selectedFileName, 1, rowIdx);
                 }
             });
         }
 
-        scanField = new CheckBox();
-        grid.add(new Label("2D Scan:"), 0, rowIndex);
-        grid.add(scanField, 1, rowIndex);
         rowIndex += 3;
 
         bCancel = new Button("Cancel");
@@ -139,7 +145,7 @@ public class InventoryStage extends Stage {
                     boolean scan = (null == scanField) ? false : scanField.isSelected();
 
                     client.setInventory(importStage.getUser().getLogin(), getInventoryType(), jobId, partition,
-                            firstCassette, lastCassette, device, scan, plateFile);
+                            firstCassette, lastCassette, device, scan, platesFile);
                     close();
 
                 } catch (Exception e) {
@@ -148,7 +154,7 @@ public class InventoryStage extends Stage {
             }
         });
 
-        scene = new Scene(grid, 300, 300);
+        scene = new Scene(grid, 350, 350);
         setScene(scene);
     }
 

@@ -3,8 +3,9 @@ package com.liconic.rest.client;
 import com.liconic.binding.stx.ObjectFactory;
 import com.liconic.binding.stx.STXCommand;
 import com.liconic.binding.stx.STXParameter;
+import com.liconic.binding.stx.STXPlate;
 import com.liconic.binding.stx.STXRequest;
-import com.liconic.stages.InventoryStage;
+import com.liconic.stages.ConsolidationStage;
 import com.liconic.utils.XMLUtil;
 
 import java.io.BufferedReader;
@@ -18,7 +19,7 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import org.apache.logging.log4j.Logger;
 
-public class InventoryClient {
+public class ConsolidationClient {
 
     private WebTarget webTarget;
     private Client client;
@@ -26,82 +27,88 @@ public class InventoryClient {
     private Alert alert;
     private ObjectFactory of;
 
-    public InventoryClient(String url, Logger log) {
+    public ConsolidationClient(String url, Logger log) {
 
         this.log = log;
 
         try {
             client = ClientBuilder.newClient();
         } catch (Exception E) {
-            log.error("InventoryClient create Client: " + E.getMessage());
+            log.error("ConsolidationClient create Client: " + E.getMessage());
         }
 
         try {
-            String path = "/inventory";
+            String path = "/xml/pick";
             webTarget = client.target(url).path(path);
-            log.info("Inventory REST API Endpoint: " + url + path);
+            log.info("Consolidation REST API Endpoint: " + url + path);
         } catch (Exception E) {
-            log.error("InventoryClient create WebTarget: " + E.getMessage());
+            log.error("ConsolidationClient create WebTarget: " + E.getMessage());
         }
 
         try {
             of = new ObjectFactory();
         } catch (Exception E) {
-            log.error("InventoryClient create ObjectFactory: " + E.getMessage());
+            log.error("ConsolidationClient create ObjectFactory: " + E.getMessage());
         }
     }
 
-    public STXRequest setInventory(String userId, String inventoryType, String jobId, String partition,
-            int firstCassette, int lastCassette, String device, boolean scan, File platesFile) {
+    public STXRequest setConsolidation(String userId, String consolidationType, String jobId, String partition,
+            String sourcePartition, String targetPartition, String tubePicker, String sourceType, String targetType, File platesFile) {
 
         STXRequest request = of.createSTXRequest();
         STXRequest response = null;
 
         try {
-            log.info("run Inventory");
+            log.info("run Consolidation");
 
             STXCommand command = of.createSTXCommand();
             command.setID(jobId);
-            command.setCmd("Inventory");
+            command.setCmd("PickTubes");
             command.setUser(userId);
+            command.setPartition(partition);
 
             STXParameter parameter;
-
-            if (InventoryStage.INVENTORY_TYPE_PARTITION.equals(inventoryType)) {
-                command.setPartition(partition);
-            }
-
-            if (InventoryStage.INVENTORY_TYPE_DEFINED_CASSETTES.equals(inventoryType)) {
-                parameter = of.createSTXParameter();
-                parameter.setParameter("Device");
-                parameter.setValue(device);
-                command.getParameters().add(parameter);
-
-                parameter = of.createSTXParameter();
-                parameter.setParameter("First Cassette");
-                parameter.setValue(Integer.toString(firstCassette));
-                command.getParameters().add(parameter);
-
-                parameter = of.createSTXParameter();
-                parameter.setParameter("Last Cassette");
-                parameter.setValue(Integer.toString(lastCassette));
-                command.getParameters().add(parameter);
-            }
+            STXPlate plate;
 
             parameter = of.createSTXParameter();
-            parameter.setParameter("2D Scan");
-            parameter.setValue(Boolean.toString(scan));
+            parameter.setParameter("Consolidation");
             command.getParameters().add(parameter);
 
-            if (InventoryStage.INVENTORY_TYPE_DEFINED_PLATES.equals(inventoryType)) {
+            if (ConsolidationStage.CONSOLIDATION_TYPE_REFORMATTING.equals(consolidationType)) {
+                parameter = of.createSTXParameter();
+                parameter.setParameter("Source Partition");
+                parameter.setValue(sourcePartition);
+                command.getParameters().add(parameter);
+
+                parameter = of.createSTXParameter();
+                parameter.setParameter("Target Partition");
+                parameter.setValue(targetPartition);
+                command.getParameters().add(parameter);
+
+                parameter = of.createSTXParameter();
+                parameter.setParameter("Tube Picker");
+                parameter.setValue(tubePicker);
+                command.getParameters().add(parameter);
+
+                parameter = of.createSTXParameter();
+                parameter.setParameter("Source Type");
+                parameter.setValue(sourceType);
+                command.getParameters().add(parameter);
+
+                parameter = of.createSTXParameter();
+                parameter.setParameter("Target Type");
+                parameter.setValue(targetType);
+                command.getParameters().add(parameter);
+            }
+
+            if (ConsolidationStage.CONSOLIDATION_TYPE_BY_PLATES.equals(consolidationType)) {
                 FileReader file = new FileReader(platesFile);
                 BufferedReader reader = new BufferedReader(file);
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    parameter = of.createSTXParameter();
-                    parameter.setParameter("Plate");
-                    parameter.setValue(line);
-                    command.getParameters().add(parameter);
+                    plate = of.createSTXPlate();
+                    plate.setPltBCR(line);
+                    request.getPlates().add(plate);
                 }
             }
 
@@ -110,7 +117,7 @@ public class InventoryClient {
             System.out.println("Request XML: \n" + XMLUtil.xmlToString(request, STXRequest.class, ObjectFactory.class));
 
             response = webTarget.request().post(Entity.xml(request), STXRequest.class);
-
+            
             System.out.println("Response XML: \n" + XMLUtil.xmlToString(response, STXRequest.class, ObjectFactory.class));
 
             String status = "";
@@ -123,23 +130,23 @@ public class InventoryClient {
             if ("OK".equals(status)) {
                 alert = new Alert(AlertType.INFORMATION);
                 alert.setTitle("Success");
-                alert.setHeaderText("Inventory created successfully!");
-                log.info("runInventory: " + status);
+                alert.setHeaderText("Consolidation created successfully!");
+                log.info("runConsolidation: " + status);
             } else {
                 alert = new Alert(AlertType.ERROR);
                 alert.setTitle("Error");
-                alert.setHeaderText("Inventory creation failed! " + errorMsg);
-                log.error("runInventory error msg: " + errorMsg);
+                alert.setHeaderText("Consolidation creation failed! " + errorMsg);
+                log.error("runConsolidation error msg: " + errorMsg);
             }
             alert.showAndWait();
 
         } catch (Exception e) {
             alert = new Alert(AlertType.ERROR);
             alert.setTitle("Error");
-            alert.setHeaderText("Inventory creation failed! " + e.getMessage());
+            alert.setHeaderText("Consolidation creation failed! " + e.getMessage());
             alert.showAndWait();
-            System.out.println("Error: runInventory: " + e.getMessage());
-            log.error("runInventory: " + e.getMessage());
+            System.out.println("Error: runConsolidation: " + e.getMessage());
+            log.error("runConsolidation: " + e.getMessage());
         }
 
         return response;

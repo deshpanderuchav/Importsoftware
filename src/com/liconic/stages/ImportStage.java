@@ -2,6 +2,8 @@ package com.liconic.stages;
 
 import com.liconic.binding.conffiles.Parameter;
 import com.liconic.binding.conffiles.ParameterGroup;
+import com.liconic.binding.stx.STXCommand;
+import com.liconic.binding.stx.STXRequest;
 import com.liconic.binding.sys.Cmd;
 import com.liconic.binding.sys.Cmds;
 import com.liconic.binding.sys.Scheduler;
@@ -17,7 +19,7 @@ import com.liconic.hardware.Level;
 import com.liconic.labware.Plate;
 import com.liconic.labware.configuration.PartitionTubeTypes;
 import com.liconic.labware.configuration.RackTubeType;
-import com.liconic.rest.client.ExportClient;
+import com.liconic.rest.client.ExportRackClient;
 import com.liconic.rest.client.Fnclient;
 import com.liconic.rest.client.SchedulerClient;
 import com.liconic.serial.DataLogicBCReader;
@@ -154,8 +156,9 @@ public class ImportStage extends Application {
     private Menu menuTools;
 
     // ToolBar Buttons
-    private Button btnDoor;
+    private Button btnLeftDoor;
     private Button btnXfer;
+    private Button btnRightDoor;
 
     private SplitPane splitPane;
 
@@ -196,7 +199,7 @@ public class ImportStage extends Application {
     private Image IconLvl = null;
     private Image IconPlate = null;
 
-    private List<PartitionTubeTypes> PartitionTubeTypesList;
+    private List<PartitionTubeTypes> partitionTubeTypesList;
     private DataLogicBCReader BCReader = null;
 
     private ImportRackStage importRackStage;
@@ -207,9 +210,11 @@ public class ImportStage extends Application {
     private String ManualScannerPort = "";
 
     private ImportForm importForm;
-    private ImportDoor importDoor;
+    private ImportDoor importLeftDoor;
+    private ImportDoor importRightDoor;
 
     private ExportRackStage exportRackStage;
+    private ExportJobStage exportJobStage;
 
     private TabPane tabPane;
     private Tab tabImport;
@@ -252,7 +257,7 @@ public class ImportStage extends Application {
     private List<Integer> bufferOpennedNodes = new ArrayList<>();
 
     public ImportStage() {
-        PartitionTubeTypesList = new ArrayList<>();
+        partitionTubeTypesList = new ArrayList<>();
         importStage = this;
     }
 
@@ -264,22 +269,11 @@ public class ImportStage extends Application {
         Format formatter = new SimpleDateFormat("dd.MM.yyyy");
         log.info("RUN: " + formatter.format(new Date()));
 
-        final Parameters params = getParameters();
-        final List<String> parameters = params.getRaw();
-
-        for (int i = 0; i < parameters.size(); i++) {
-
-            if (!parameters.get(i).isEmpty()) {
-
-            }
-        }
-
         Map param = getParameters().getNamed();
 
         ConfigFile = (String) param.get("ConfigFile");
 
         if (ConfigFile == null) {
-
             File file = new File(System.getProperty("user.dir") + "\\ImportConfig.xml");
 
             if (file.exists()) {
@@ -289,14 +283,12 @@ public class ImportStage extends Application {
             }
 
         } else {
-
             File file = new File(ConfigFile);
 
             if (!file.exists()) {
                 log.error("File does not exists 2: " + ConfigFile);
                 ConfigFile = "";
             }
-
         }
 
         if ((ConfigFile == null) || (ConfigFile.isEmpty())) {
@@ -306,27 +298,18 @@ public class ImportStage extends Application {
         File file = new File(ConfigFile);
 
         if (!file.exists()) {
-
             log.error("File does not exists 3: " + ConfigFile);
-
             ConfigFile = "";
-
             JOptionPane.showMessageDialog(null, "Configuration File: \"ImportConfig.xml\" has not been found!", "Error!", JOptionPane.ERROR_MESSAGE);
-
             log.error("Exit, configuration file has not been found");
-
             Platform.exit();
-
         } else {
-
             ReadConfigFile(ConfigFile);
         }
-
     }
 
     @Override
     public void start(Stage primaryStage) {
-
         // Create Icons
         IconCass = new Image("images/cass.png");
         IconLvl = new Image("images/level.png");
@@ -342,36 +325,28 @@ public class ImportStage extends Application {
 
         toolBarContentPane = new BorderPane();
 
-        ImageView doorImg = new ImageView(new Image("images/doorclose_btn.png"));
-        doorImg.setFitHeight(38);
-        doorImg.setFitWidth(33);
+        ImageView leftDoorImg = new ImageView(new Image("images/doorclose_btn.png"));
+        leftDoorImg.setFitHeight(38);
+        leftDoorImg.setFitWidth(33);
 
-        btnDoor = new Button("", doorImg);
-        btnDoor.setTooltip(new Tooltip("Import Samples via Door"));
-        btnDoor.setPrefSize(40, 40);
+        btnLeftDoor = new Button("", leftDoorImg);
+        btnLeftDoor.setTooltip(new Tooltip("Import via Left Buffer"));
+        btnLeftDoor.setPrefSize(40, 40);
 
-        btnDoor.setOnAction(new EventHandler<ActionEvent>() {
-
+        btnLeftDoor.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent event) {
-
                 if (!dm.getWarupDelay()) {
-
-                    importDoor = new ImportDoor(importStage, WEB_SERVICES_URI, log);
-                    importDoor.initModality(Modality.WINDOW_MODAL);
-                    importDoor.initOwner(scene.getWindow());
-
-                    importDoor.show();
-
+                    importLeftDoor = new ImportDoor(importStage, WEB_SERVICES_URI, log, ImportDoor.IMPORT_VIA_LEFT_BUFFER);
+                    importLeftDoor.initModality(Modality.WINDOW_MODAL);
+                    importLeftDoor.initOwner(scene.getWindow());
+                    importLeftDoor.show();
                 } else {
-
                     StageMessage stageMessage = new StageMessage(3, "Warning", "There is pending task in buffer!\n\nPlease, try again later!");
                     stageMessage.initModality(Modality.WINDOW_MODAL);
                     stageMessage.initOwner(scene.getWindow());
-
                     stageMessage.show();
                 }
-
             }
         });
 
@@ -380,23 +355,45 @@ public class ImportStage extends Application {
         xferImg.setFitWidth(33);
 
         btnXfer = new Button("", xferImg);
-        btnXfer.setTooltip(new Tooltip("Import Samples via Transferstation"));
+        btnXfer.setTooltip(new Tooltip("Import via Transferstation"));
         btnXfer.setPrefSize(40, 40);
 
         btnXfer.setOnAction(new EventHandler<ActionEvent>() {
-
             @Override
             public void handle(ActionEvent event) {
-
                 importForm = new ImportForm(importStage, WEB_SERVICES_URI, log);
                 importForm.initModality(Modality.WINDOW_MODAL);
                 importForm.initOwner(scene.getWindow());
                 importForm.show();
-
             }
         });
 
-        toolBarPane = new ToolBar(btnDoor, btnXfer);
+        ImageView rightDoorImg = new ImageView(new Image("images/doorclose_btn.png"));
+        rightDoorImg.setFitHeight(38);
+        rightDoorImg.setFitWidth(33);
+
+        btnRightDoor = new Button("", rightDoorImg);
+        btnRightDoor.setTooltip(new Tooltip("Import via Right Buffer"));
+        btnRightDoor.setPrefSize(40, 40);
+
+        btnRightDoor.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent event) {
+                if (!dm.getWarupDelay()) {
+                    importRightDoor = new ImportDoor(importStage, WEB_SERVICES_URI, log, ImportDoor.IMPORT_VIA_RIGHT_BUFFER);
+                    importRightDoor.initModality(Modality.WINDOW_MODAL);
+                    importRightDoor.initOwner(scene.getWindow());
+                    importRightDoor.show();
+                } else {
+                    StageMessage stageMessage = new StageMessage(3, "Warning", "There is pending task in buffer!\n\nPlease, try again later!");
+                    stageMessage.initModality(Modality.WINDOW_MODAL);
+                    stageMessage.initOwner(scene.getWindow());
+                    stageMessage.show();
+                }
+            }
+        });
+
+        toolBarPane = new ToolBar(btnLeftDoor, btnXfer, btnRightDoor);
         toolBarPane.setPrefHeight(40);
 
         toolBarContentPane.setCenter(toolBarPane);
@@ -423,10 +420,139 @@ public class ImportStage extends Application {
 
         // Jobs menu
         menuJobs = new Menu("Jobs");
+        
+      //  Import Job sub menu
+        Menu mImport = new Menu("Import");
+        MenuItem mxfer = new MenuItem("Through Xfer Station");
+        MenuItem mPreload = new MenuItem("Preload");
+        
+        
+        mImport.getItems().addAll(mxfer, new SeparatorMenuItem(), mPreload);
+        mxfer.setOnAction(new EventHandler<ActionEvent>(){
+            @Override
+                    public void handle(ActionEvent t){
+                        ImportxferStage xferstage = new ImportxferStage(importStage, log, WEB_SERVICES_URI,ImportxferStage.XFER);
+                        xferstage.initModality(Modality.WINDOW_MODAL);
+                        xferstage.initOwner(scene.getWindow());
+                        xferstage.setTitle("Setup Import Job");
+                        xferstage.show();   
+                    }
+                    
+
+            
+        });
+        
+          mPreload.setOnAction(new EventHandler<ActionEvent>(){
+            @Override
+                    public void handle(ActionEvent t){
+                        ImportxferStage importJobForm = new ImportxferStage(importStage, log, WEB_SERVICES_URI,ImportxferStage.PRELOAD);
+                        importJobForm.initModality(Modality.WINDOW_MODAL);
+                        importJobForm.initOwner(scene.getWindow());
+                        importJobForm.setTitle("Setup Import Job");
+                        importJobForm.show();   
+                    }
+                    
+
+            
+        });
+
+        
+        // Pick job sub menu
+        Menu mPickJob = new Menu("Pick Job");
+        MenuItem mSimple = new MenuItem("With Default Tube Picker");
+        MenuItem mWithCustomTubePicker = new MenuItem("With Custom Tube Picker");
+
+        mSimple.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent t) {
+                PickJobStage pickJobForm = new PickJobStage(importStage, log, WEB_SERVICES_URI, PickJobStage.PICK_JOB_TYPE_SIMPLE);
+                pickJobForm.initModality(Modality.WINDOW_MODAL);
+                pickJobForm.initOwner(scene.getWindow());
+                pickJobForm.setTitle("Setup Pick Job");
+                pickJobForm.show();
+            }
+        });
+
+        mWithCustomTubePicker.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent t) {
+                PickJobStage pickJobForm = new PickJobStage(importStage, log, WEB_SERVICES_URI, PickJobStage.PICK_JOB_TYPE_WITH_CUSTOM_TUBE_PICKER);
+                pickJobForm.initModality(Modality.WINDOW_MODAL);
+                pickJobForm.initOwner(scene.getWindow());
+                pickJobForm.setTitle("Setup Pick Job With Custom Tube Picker");
+                pickJobForm.show();
+            }
+        });
+
+        mPickJob.getItems().addAll(mSimple, new SeparatorMenuItem(), mWithCustomTubePicker);
+        menuJobs.getItems().addAll(mPickJob, new SeparatorMenuItem());
+        
+        menuJobs.getItems().addAll(mImport, new SeparatorMenuItem());
+
+        // Export plate sub menu
+        MenuItem mExportPlate = new Menu("Export Plate");
+        
+        mExportPlate.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent t) {
+                ExportPlateStage exportPlateForm = new ExportPlateStage(importStage, log, WEB_SERVICES_URI);
+                exportPlateForm.initModality(Modality.WINDOW_MODAL);
+                exportPlateForm.initOwner(scene.getWindow());
+                exportPlateForm.setTitle("Setup Export Plate Job");
+                exportPlateForm.show();
+            }
+        });
+
+        menuJobs.getItems().addAll(mExportPlate, new SeparatorMenuItem());
+        
+        
+        // Consolidation sub menu
+        Menu mConsolidation = new Menu("Consolidation");
+        MenuItem mByPlates = new MenuItem("By Plates");
+        MenuItem mByPartition = new MenuItem("By Partition");
+        MenuItem mReformatting = new MenuItem("Reformatting");
+
+        mByPlates.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent t) {
+                ConsolidationStage consolidationForm = new ConsolidationStage(importStage, log, WEB_SERVICES_URI, ConsolidationStage.CONSOLIDATION_TYPE_BY_PLATES);
+                consolidationForm.initModality(Modality.WINDOW_MODAL);
+                consolidationForm.initOwner(scene.getWindow());
+                consolidationForm.setTitle("Setup Consolidation By Plates");
+                consolidationForm.show();
+            }
+        });
+
+        mByPartition.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent t) {
+                ConsolidationStage consolidationForm = new ConsolidationStage(importStage, log, WEB_SERVICES_URI, ConsolidationStage.CONSOLIDATION_TYPE_BY_PARTITION);
+                consolidationForm.initModality(Modality.WINDOW_MODAL);
+                consolidationForm.initOwner(scene.getWindow());
+                consolidationForm.setTitle("Setup Consolidation By Partition");
+                consolidationForm.show();
+            }
+        });
+
+        mReformatting.setOnAction(new EventHandler<ActionEvent>() {
+            @Override
+            public void handle(ActionEvent t) {
+                ConsolidationStage consolidationForm = new ConsolidationStage(importStage, log, WEB_SERVICES_URI, ConsolidationStage.CONSOLIDATION_TYPE_REFORMATTING);
+                consolidationForm.initModality(Modality.WINDOW_MODAL);
+                consolidationForm.initOwner(scene.getWindow());
+                consolidationForm.setTitle("Setup Reformatting");
+                consolidationForm.show();
+            }
+        });
+
+        mConsolidation.getItems().addAll(mByPlates, new SeparatorMenuItem(), mByPartition, new SeparatorMenuItem(), mReformatting);
+        menuJobs.getItems().addAll(mConsolidation, new SeparatorMenuItem());
+
+        // Inventory sub menu
         Menu mInventory = new Menu("Inventory");
         MenuItem mPartition = new MenuItem("Partition");
         MenuItem mDefinedCassettes = new MenuItem("Defined Cassettes");
-        MenuItem mDefinedPlate = new MenuItem("Defined Plate");
+        MenuItem mDefinedPlates = new MenuItem("Defined Plates");
 
         mPartition.setOnAction(new EventHandler<ActionEvent>() {
             @Override
@@ -450,18 +576,18 @@ public class ImportStage extends Application {
             }
         });
 
-        mDefinedPlate.setOnAction(new EventHandler<ActionEvent>() {
+        mDefinedPlates.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent t) {
-                InventoryStage inventoryForm = new InventoryStage(importStage, log, WEB_SERVICES_URI, InventoryStage.INVENTORY_TYPE_DEFINED_PLATE);
+                InventoryStage inventoryForm = new InventoryStage(importStage, log, WEB_SERVICES_URI, InventoryStage.INVENTORY_TYPE_DEFINED_PLATES);
                 inventoryForm.initModality(Modality.WINDOW_MODAL);
                 inventoryForm.initOwner(scene.getWindow());
-                inventoryForm.setTitle("Setup Inventory Of Defined Plate");
+                inventoryForm.setTitle("Setup Inventory Of Defined Plates");
                 inventoryForm.show();
             }
         });
 
-        mInventory.getItems().addAll(mPartition, new SeparatorMenuItem(), mDefinedCassettes, new SeparatorMenuItem(), mDefinedPlate);
+        mInventory.getItems().addAll(mPartition, new SeparatorMenuItem(), mDefinedCassettes, new SeparatorMenuItem(), mDefinedPlates);
         menuJobs.getItems().addAll(mInventory);
 
         /*        
@@ -474,20 +600,15 @@ public class ImportStage extends Application {
         });
          */
         miUpdateContent.setOnAction(new EventHandler<ActionEvent>() {
-
             @Override
             public void handle(ActionEvent event) {
-
                 UpdateContentGUI();
-
             }
         });
 
         miConnect.setOnAction(new EventHandler<ActionEvent>() {
-
             @Override
             public void handle(ActionEvent event) {
-
                 if (clientEndPoint == null) {
                     ConnectToWebsocket();
                 }
@@ -498,40 +619,32 @@ public class ImportStage extends Application {
         MenuItem miSettings = new MenuItem("Settings");
 
         miSettings.setOnAction(new EventHandler<ActionEvent>() {
-
             @Override
             public void handle(ActionEvent event) {
-
                 SettingsStage settingsForm = new SettingsStage(importStage, log);
                 settingsForm.initModality(Modality.WINDOW_MODAL);
                 settingsForm.initOwner(scene.getWindow());
                 settingsForm.show();
-
             }
         });
 
         MenuItem miImportPlate = new MenuItem("Import Plate");
 
         miImportPlate.setOnAction(new EventHandler<ActionEvent>() {
-
             @Override
             public void handle(ActionEvent event) {
-
                 importRackStage = new ImportRackStage(importStage, user, log, false);
-
                 importRackStage.initModality(Modality.WINDOW_MODAL);
-
-                importRackStage.setLabware(PartitionTubeTypesList);
-
+                importRackStage.setLabware(partitionTubeTypesList);
                 importRackStage.initOwner(scene.getWindow());
-
                 importRackStage.show();
-
             }
         });
 
-        menuTools.getItems().addAll(miSettings, new SeparatorMenuItem(), miImportPlate);
+        //menuTools.getItems().addAll(miSettings, new SeparatorMenuItem(), miImportPlate);
 
+        menuTools.getItems().addAll(miImportPlate);
+        
         menuBar.getMenus().addAll(menuFile, menuTools, menuConnect, menuJobs);
 
         toolBarContentPane.setTop(menuBar);
@@ -551,7 +664,6 @@ public class ImportStage extends Application {
         positionColumn.setCellValueFactory(new TreeItemPropertyValueFactory("position"));
 
         positionColumn.setCellFactory(new Callback<TreeTableColumn<BufferModel, Object>, TreeTableCell<BufferModel, Object>>() {
-
             @Override
             public TreeTableCell<BufferModel, Object> call(TreeTableColumn<BufferModel, Object> param) {
 
@@ -560,56 +672,36 @@ public class ImportStage extends Application {
                     ImageView imageview = new ImageView();
 
                     @Override
-
                     public void updateItem(Object object, boolean empty) {
-
                         if (object != null) {
-
                             HBox box = new HBox();
-
                             box.setSpacing(10);
-
                             VBox vbox = new VBox();
-
                             String caption = "";
 
                             if (object.getClass().getName().equals("com.liconic.hardware.Cassette")) {
-
                                 caption = "Cassette " + String.valueOf(((Cassette) object).getID());
-
                                 imageview.setImage(IconCass);
-
                             } else {
                                 if (object.getClass().getName().equals("com.liconic.hardware.Level")) {
-
                                     Level level = ((Level) object);
-
                                     if (level.getPlate() == null) {
-
                                         caption = "Level " + String.valueOf(level.getLevelId());
                                         imageview.setImage(IconLvl);
-
                                     } else {
-
                                         if (!level.getPlate().getBarcode().isEmpty()) {
                                             caption = level.getPlate().getBarcode();
                                         } else {
                                             caption = "Plate";
                                         }
-
                                         imageview.setImage(IconPlate);
-
                                     }
-
                                 }
                             }
 
                             vbox.getChildren().add(new Label(caption));
-
                             box.getChildren().addAll(imageview, vbox);
-
                             setGraphic(box);
-
                         } else {
                             HBox box = new HBox();
                             setGraphic(box);
@@ -628,7 +720,6 @@ public class ImportStage extends Application {
         scene = new Scene(rootPane, Screen.getPrimary().getVisualBounds().getWidth(), 600);
 
         try {
-
             String UName = System.getProperty("user.name");
             String UPassword = UName.toLowerCase();
 
@@ -642,58 +733,41 @@ public class ImportStage extends Application {
             user = dm.getUser(UName);
 
             if (user == null) {
-
                 log.error("Login: User is unknown, User name=" + UName);
-
                 Alert alert = new Alert(AlertType.ERROR);
                 alert.setTitle("Error");
                 alert.setHeaderText("User is unknown!");
                 alert.showAndWait();
-
             } else {
-
                 importStage.setDm(dm);
                 importStage.setUser(user);
-
                 log.info("Login: User name=" + UName);
-
             }
 
         } catch (Exception E) {
-
             System.out.println("Login Liconic Failure");
-
             Alert alert = new Alert(AlertType.ERROR);
             alert.setTitle("Error");
             alert.setHeaderText("ERROR: Create Database connection - " + E.getMessage());
             alert.showAndWait();
-
             //log.error("Login: " + E.getMessage());
             //log.info("Login Close Application");
             //Platform.exit();
         }
 
         if (user == null) {
-
             LoginStage ls = new LoginStage(log);
-
             ls.setDB_DRIVER(DB_DRIVER);
             ls.setDB_URL(DB_URL);
             ls.setImportStage(this);
-
             ls.showAndWait();
         }
 
         if (user == null) {
-
             Platform.exit();
-
         } else {
-
             try {
-
                 setdBTimer(DB_DRIVER, DB_URL, UserName, UserPassword, log);
-
             } catch (Exception E) {
             }
 
@@ -704,12 +778,7 @@ public class ImportStage extends Application {
                 Platform.exit();
             }
 
-            if (user.getUserRole() == 1) {
-
-            }
-
             for (Device dev : Sys.getDevices()) {
-
                 DeviceStatusTab statusTab = new DeviceStatusTab(dev);
                 statusBar.getChildren().add(statusTab);
 
@@ -720,28 +789,21 @@ public class ImportStage extends Application {
                         IdBufferDevice = dev.getId();
                     }
                 }
-
             }
 
             if (!ManualScannerPort.isEmpty()) {
-
                 try {
                     BCReader = new DataLogicBCReader(ManualScannerPort, this, log);
                 } catch (Exception E) {
-
                     JOptionPane.showMessageDialog(null,
                             "Error of running manual BC Reader, Port: " + ManualScannerPort + "!",
                             "Error",
                             JOptionPane.WARNING_MESSAGE);
-
                     BCReader = null;
-
                 }
-
             }
 
             bufferTableView = new TreeTableView(dm.getBufferView(IdBufferDevice));
-
             bufferTableView.setShowRoot(false);
             bufferTableView.setEditable(false);
             bufferTableView.getColumns().setAll(positionColumn, noteColumn);
@@ -749,7 +811,6 @@ public class ImportStage extends Application {
 
             titledPaneBuffer = new TitledPane();
             titledPaneBuffer.setText("Buffer");
-
             titledPaneBuffer.setContent(bufferTableView);
 
             titledPaneExceptionRacks = new TitledPane();
@@ -761,13 +822,10 @@ public class ImportStage extends Application {
             DrawExceptionPlates();
 
             leftSplitpane.setOrientation(Orientation.VERTICAL);
-
             leftSplitpane.getItems().addAll(titledPaneBuffer, titledPaneExceptionRacks);
-
             leftSplitpane.setDividerPosition(0, 0.7);
 
             splitPane.getItems().add(leftSplitpane);
-
             splitPane.setDividerPosition(0, 0.3);
 
             tabPane = new TabPane();
@@ -791,31 +849,23 @@ public class ImportStage extends Application {
             importTreeTableView.getStylesheets().add("style/stylesTaskTree.css");
 
             importTreeTableView.getSelectionModel().selectedItemProperty().addListener(new ChangeListener<TreeItem>() {
-
                 @Override
                 public void changed(ObservableValue<? extends TreeItem> paramObservableValue, TreeItem paramT1, TreeItem selectedItem) {
-
                     if (selectedItem != null) {
-
                         if (((ImportTaskTableModel) selectedItem.getValue()).getPlate() != null) {
                             DrawImportJob(((ImportTaskTableModel) selectedItem.getValue()).getId(), ((Plate) ((ImportTaskTableModel) selectedItem.getValue()).getPlate()).getID());
                         } else {
                             DrawImportTask(((ImportTaskTableModel) selectedItem.getValue()).getId());
                         }
-
                     }
-
                 }
-
             });
 
             menuDeleteJob = new MenuItem("Delete Import");
 
             menuDeleteJob.setOnAction(new EventHandler<ActionEvent>() {
-
                 @Override
                 public void handle(ActionEvent t) {
-
                     int idJob = 0;
 
                     if (((ImportTaskTableModel) ((TreeItem) importTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getPlate() != null) {
@@ -825,23 +875,16 @@ public class ImportStage extends Application {
                     }
 
                     if (!dm.DeleteImportJob(idJob)) {
-
                         log.info("Can not delete Import Job ID=" + idJob);
-
                         StageMessage stageMessage = new StageMessage(3, "Warning", "Can not delete Import Job!\n\nSelected Job has active task!");
                         stageMessage.initModality(Modality.WINDOW_MODAL);
                         stageMessage.initOwner(scene.getWindow());
-
                         stageMessage.show();
-
                     } else {
-
                         log.info("Import Job deleted ID=" + idJob);
-
                         ImportRootItem = dm.getImportTaskList(user.getUserID());
                         importTreeTableView.setRoot(ImportRootItem);
                     }
-
                 }
             });
 
@@ -853,7 +896,6 @@ public class ImportStage extends Application {
             importColumnBarcode.setCellValueFactory(new TreeItemPropertyValueFactory("plate"));
 
             importColumnBarcode.setCellFactory(new Callback<TreeTableColumn<ImportTaskTableModel, Object>, TreeTableCell<ImportTaskTableModel, Object>>() {
-
                 @Override
                 public TreeTableCell<ImportTaskTableModel, Object> call(TreeTableColumn<ImportTaskTableModel, Object> param) {
 
@@ -861,37 +903,23 @@ public class ImportStage extends Application {
 
                         @Override
                         public void updateItem(Object object, boolean empty) {
-
                             if (object != null) {
-
                                 HBox box = new HBox();
-
                                 box.setSpacing(10);
-
                                 VBox vbox = new VBox();
-
                                 String caption = "";
-
                                 caption = ((Plate) object).getBarcode();
-
                                 vbox.getChildren().add(new Label(caption));
                                 box.getChildren().addAll(vbox);
-
                                 setGraphic(box);
-
                             } else {
                                 HBox box = new HBox();
                                 setGraphic(box);
                             }
-
                         }
-
                     };
-
                     return cell;
-
                 }
-
             });
 
             importColumnTask = new TreeTableColumn<>("Task");
@@ -968,7 +996,7 @@ public class ImportStage extends Application {
 
             rootPane.setCenter(splitPane);
 
-            dm.getUserLabware(PartitionTubeTypesList, user.getUserID());
+            dm.getUserLabware(partitionTubeTypesList, user.getUserID());
 
             // Scheduler Status
             hbSchedulerStatus = new HBox();
@@ -982,7 +1010,7 @@ public class ImportStage extends Application {
             // Empty Levels
             hbEmptyLevels = new HBox();
             hbEmptyLevels.setMinWidth(120);
-            lbEmptyLevels = new Label("Empty levels: ");
+           lbEmptyLevels = new Label("Empty levels: ");
 
             hbEmptyLevels.getChildren().add(lbEmptyLevels);
 
@@ -1014,30 +1042,22 @@ public class ImportStage extends Application {
             en.run();
 
             primaryStage.setOnShown(new EventHandler<WindowEvent>() {
-
                 @Override
                 public void handle(WindowEvent t) {
                     ConnectToWebsocket();
                 }
-
             });
-
         }
 
         primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
-
             @Override
             public void handle(WindowEvent t) {
-
                 IsLogout = true;
-
                 try {
-
                     if (clientEndPoint != null) {
                         clientEndPoint.Close();
                     }
                 } catch (Exception E) {
-
                 }
 
                 if (BCReader != null) {
@@ -1060,26 +1080,21 @@ public class ImportStage extends Application {
                 if (logOutTimer != null) {
                     logOutTimer.Stop();
                 }
-
             }
         });
 
         primaryStage.addEventFilter(EventType.ROOT, new EventHandler<Event>() {
-
             @Override
             public void handle(Event event) {
-
                 if (IsLogout) {
                     return;
                 }
-
                 lastAccessDate = new Date();
             }
         }
         );
 
         primaryStage.getIcons().add(new Image(getClass().getClassLoader().getResourceAsStream("images/appliclogo.png")));
-
         primaryStage.setTitle("Regeneron Import/Export Console [" + user.getUserName() + " " + user.getUserSecName() + "]");
         primaryStage.setScene(scene);
         primaryStage.show();
@@ -1110,9 +1125,7 @@ public class ImportStage extends Application {
 
     public void ReadConfigFile(String PathToConf) {
         try {
-
             log.info("Read Config file: " + PathToConf);
-
             JAXBContext jc = JAXBContext.newInstance(com.liconic.binding.conffiles.ObjectFactory.class);
             Unmarshaller u = jc.createUnmarshaller();
 
@@ -1122,18 +1135,12 @@ public class ImportStage extends Application {
             com.liconic.binding.conffiles.Parameters params = (com.liconic.binding.conffiles.Parameters) u.unmarshal(f);
 
             for (int sys_i = 0; sys_i < params.getParameterGroup().size(); sys_i++) {
-
                 // Database
                 if (params.getParameterGroup().get(sys_i).getName().equals("DataBase")) {
-
                     log.info("   DataBase");
-
                     ParameterGroup GroupDataDase = params.getParameterGroup().get(sys_i);
-
                     for (int db_pg = 0; db_pg < GroupDataDase.getParameter().size(); db_pg++) {
-
                         Parameter ParamDB = GroupDataDase.getParameter().get(db_pg);
-
                         if (ParamDB.getName().equals("Driver")) {
                             DB_DRIVER = ParamDB.getValue();
                             log.info("      Driver=" + DB_DRIVER);
@@ -1154,87 +1161,58 @@ public class ImportStage extends Application {
                             }
                         }
 
-                        DB_URL = "jdbc:firebirdsql://" + DB_HOST + ":3050/" + DB_PATH;
-
-                        log.info("      DB_URL=" + DB_URL);
+//                        DB_URL = "jdbc:firebirdsql://" + DB_HOST + ":3050/" + DB_PATH;
+//                        log.info("      DB_URL=" + DB_URL);
                     }
                 } else // TCP Server
                 {
                     if (params.getParameterGroup().get(sys_i).getName().equals("Scheduler")) {
-
                         log.info("   Scheduler");
-
                         ParameterGroup GroupTCPServer = params.getParameterGroup().get(sys_i);
 
                         for (int db_pg = 0; db_pg < GroupTCPServer.getParameter().size(); db_pg++) {
-
                             Parameter ParamTCPServer = GroupTCPServer.getParameter().get(db_pg);
-
                             if (ParamTCPServer.getName().equals("WsURI")) {
-
                                 WEB_SOCKET_URI = ParamTCPServer.getValue();
                                 log.info("      WsURI=" + WEB_SOCKET_URI);
-
                             } else if (ParamTCPServer.getName().equals("WebServices")) {
-
                                 WEB_SERVICES_URI = ParamTCPServer.getValue();
                                 log.info("      WebServices=" + WEB_SERVICES_URI);
-
                             }
-
                         }
-
                     } else // TCP Server
                     {
                         if (params.getParameterGroup().get(sys_i).getName().equals("Labware")) {
-
                             log.info("   Labware");
-
                             ParameterGroup GroupLabware = params.getParameterGroup().get(sys_i);
 
                             for (ParameterGroup pg : GroupLabware.getParameterGroup()) {
-
                                 PartitionTubeTypes pttlist = null;
-
                                 for (Parameter param : pg.getParameter()) {
-
                                     if (param.getName().equals("Partition")) {
                                         pttlist = new PartitionTubeTypes(param.getValue());
                                         log.info("      Partition=" + param.getValue());
-
                                     } else if (param.getName().equals("TubeType")) {
                                         pttlist.getTubesTypes().add(new RackTubeType(param.getValue()));
-
                                         log.info("         TubeType=" + param.getValue());
-
                                     }
-
                                 }
-
-                                PartitionTubeTypesList.add(pttlist);
-
+                                partitionTubeTypesList.add(pttlist);
                             }
 
                         } else if (params.getParameterGroup().get(sys_i).getName().equals("1DScanner")) {
-
                             log.info("   1DScanner");
-
                             ParameterGroup Group1DScanner = params.getParameterGroup().get(sys_i);
 
                             for (Parameter param : Group1DScanner.getParameter()) {
-
                                 if (param.getName().equals("Port")) {
-
                                     ManualScannerPort = param.getValue();
                                     log.info("      Port=" + ManualScannerPort);
-
                                 }
                             }
-
                         }
                     }
                 }
-
             }
 
         } catch (Exception E) {
@@ -1244,25 +1222,18 @@ public class ImportStage extends Application {
     }
 
     private Device getDeviceById(String devId) {
-
         Device dev = null;
-
         for (int i = 0; i < Sys.getDevices().size(); i++) {
-
             if (((Device) Sys.getDevices().get(i)).getDevId().equals(devId)) {
                 dev = (Device) Sys.getDevices().get(i);
                 break;
             }
-
         }
-
         return dev;
-
     }
 
     public void ReadWSMessage(String MSG) {
         try {
-
             System.out.println(MSG);
             log.info("WS Message: " + MSG);
 
@@ -1274,26 +1245,19 @@ public class ImportStage extends Application {
             com.liconic.binding.sys.Sys mSys = (com.liconic.binding.sys.Sys) u.unmarshal(reader);
 
             for (com.liconic.binding.sys.Device mDev : mSys.getDevice()) {
-
                 Device dev = getDeviceById(mDev.getDevId());
-
                 if (dev != null) {
-
                     for (com.liconic.binding.sys.Status stat : mDev.getStatus()) {
-
                         // Init
                         if (stat.getId().equals("Busy")) {
-
                             if (stat.getValue().equals("true")) {
                                 dev.setBusy(true);
                             } else {
                                 dev.setBusy(false);
                             }
-
                         } else // Busy
                         {
                             if (stat.getId().equals("Init")) {
-
                                 if (stat.getValue().equals("true")) {
                                     dev.setInit(true);
                                 } else {
@@ -1303,7 +1267,6 @@ public class ImportStage extends Application {
                             } else // Error
                             {
                                 if (stat.getId().equals("Error")) {
-
                                     if (stat.getValue().equals("true")) {
                                         dev.setError(true);
                                     } else {
@@ -1313,7 +1276,6 @@ public class ImportStage extends Application {
                                 } else // ErrorCode
                                 {
                                     if (stat.getId().equals("ErrorCode")) {
-
                                         dev.setErrorCode(Integer.valueOf(stat.getValue()));
 
                                     } else // Door
@@ -1331,26 +1293,19 @@ public class ImportStage extends Application {
                             }
                         }
                     }
-
                     dev.drawStatusGUI();
-
                 }
             }
 
             if (mSys.getScheduler() != null) {
-
                 Scheduler scheduler = mSys.getScheduler().getValue();
-
                 DrawSchedulerStatus(scheduler.getStatus().getValue());
-
             }
 
             if (mSys.getCmds() != null) {
-
                 Cmds cmds = mSys.getCmds().getValue();
 
                 for (Cmd cmd : cmds.getCmd()) {
-
                     String CMDResult = "";
                     String CMDValue = "";
 
@@ -1363,23 +1318,23 @@ public class ImportStage extends Application {
                     }
 
                     if ((!CMDResult.isEmpty()) || (!CMDValue.isEmpty())) {
-
                         if (importForm != null) {
                             importForm.SetCmdReply(Integer.valueOf(cmd.getId()), CMDResult, CMDValue);
                         }
-
-                        if (importDoor != null) {
-                            importDoor.SetCmdReply(Integer.valueOf(cmd.getId()), CMDResult, CMDValue);
+                        if (importLeftDoor != null) {
+                            importLeftDoor.SetCmdReply(Integer.valueOf(cmd.getId()), CMDResult, CMDValue);
                         }
-
+                        if (importRightDoor != null) {
+                            importRightDoor.SetCmdReply(Integer.valueOf(cmd.getId()), CMDResult, CMDValue);
+                        }
                         if (exportRackStage != null) {
                             exportRackStage.SetCmdReply(Integer.valueOf(cmd.getId()), CMDResult, CMDValue);
                         }
-
+                        if (exportJobStage != null) {
+                            exportJobStage.SetCmdReply(Integer.valueOf(cmd.getId()), CMDResult, CMDValue);
+                        }
                     }
-
                     DrawJobsContent(Integer.valueOf(cmd.getId()));
-
                 }
             }
 
@@ -1390,25 +1345,19 @@ public class ImportStage extends Application {
     }
 
     public void DrawCountEmptyLevels() {
-
         final int emptyLevels = dm.getUserEmptyLevels(IdStoreDevice, user.getUserID());
 
         new Thread(new Runnable() {
-
             @Override
             public void run() {
-
                 Platform.runLater(new Runnable() {
 
                     @Override
                     public void run() {
-
                         lbEmptyLevels.setText("Empty levels: " + emptyLevels);
-
                     }
                 });
             }
-
         }).start();
 
     }
@@ -1418,50 +1367,35 @@ public class ImportStage extends Application {
         final int emptyRacks = dm.getUserEmptyRacks(IdStoreDevice, user.getUserID());
 
         new Thread(new Runnable() {
-
             @Override
             public void run() {
-
                 Platform.runLater(new Runnable() {
 
                     @Override
                     public void run() {
-
                         lbEmptyRacks.setText("Empty racks: " + emptyRacks);
-
                     }
                 });
-
             }
 
         }).start();
-
     }
 
     public void DrawBuffer() {
 
         new Thread(new Runnable() {
-
             @Override
             public void run() {
-
                 Platform.runLater(new Runnable() {
-
                     @Override
                     public void run() {
-
                         TreeItem<BufferModel> BufferRootItem = bufferTableView.getRoot();
-
                         bufferOpennedNodes.clear();
-
                         for (TreeItem item : BufferRootItem.getChildren()) {
-
                             if (item.isExpanded()) {
-
                                 if (((BufferModel) item.getValue()).getPosition().getClass().getName().equals("com.liconic.hardware.Cassette")) {
                                     bufferOpennedNodes.add(((Cassette) ((BufferModel) item.getValue()).getPosition()).getDBID());
                                 }
-
                             }
                         }
 
@@ -1470,11 +1404,8 @@ public class ImportStage extends Application {
                         BufferRootItem = bufferTableView.getRoot();
 
                         for (int id : bufferOpennedNodes) {
-
                             for (TreeItem item : BufferRootItem.getChildren()) {
-
                                 if (((BufferModel) item.getValue()).getPosition().getClass().getName().equals("com.liconic.hardware.Cassette")) {
-
                                     if (id == ((Cassette) ((BufferModel) item.getValue()).getPosition()).getDBID()) {
                                         item.setExpanded(true);
                                     }
@@ -1494,46 +1425,31 @@ public class ImportStage extends Application {
         boolean isDraw = false;
 
         if (ImportRootItem != null) {
-
             for (TreeItem item : ImportRootItem.getChildren()) {
-
                 if (((ImportTaskTableModel) item.getValue()).getId() == id) {
-
                     isDraw = true;
                     break;
-
                 } else {
-
                     for (Object itemc : item.getChildren()) {
-
                         if (((ImportTaskTableModel) ((TreeItem) itemc).getValue()).getId() == id) {
-
                             isDraw = true;
                             break;
-
                         }
                     }
                 }
-
             }
 
             if (isDraw) {
-
                 new Thread(new Runnable() {
-
                     @Override
                     public void run() {
-
                         Platform.runLater(new Runnable() {
-
                             @Override
                             public void run() {
-
                                 ImportRootItem = dm.getImportTaskList(user.getUserID());
                                 importTreeTableView.setRoot(ImportRootItem);
                                 DrawTaskHistory(0);
                                 DrawTaskProperty(0);
-
                             }
                         });
                     }
@@ -1545,38 +1461,27 @@ public class ImportStage extends Application {
         isDraw = false;
 
         if (ExportRootItem != null) {
-
             for (TreeItem item : ExportRootItem.getChildren()) {
-
                 if (((ExportTaskTableModel) item.getValue()).getIdTask() == id) {
-
                     isDraw = true;
                     break;
 
                 } else {
-
                     for (Object itemc : item.getChildren()) {
-
                         if (((ExportTaskTableModel) ((TreeItem) itemc).getValue()).getIdTask() == id) {
-
                             isDraw = true;
                             break;
-
                         }
                     }
                 }
-
             }
 
             if (isDraw) {
-
                 new Thread(new Runnable() {
 
                     @Override
                     public void run() {
-
                         Platform.runLater(new Runnable() {
-
                             @Override
                             public void run() {
 
@@ -1588,13 +1493,8 @@ public class ImportStage extends Application {
                             }
                         });
                     }
-
                 }).start();
-
-            } else {
-
             }
-
         }
     }
 
@@ -1613,42 +1513,30 @@ public class ImportStage extends Application {
     public boolean CheckBarcode(String BCR) {
 
         if (importRackStage == null) {
-
             new Thread(new Runnable() {
 
                 @Override
                 public void run() {
-
                     Platform.runLater(new Runnable() {
 
                         @Override
                         public void run() {
-
                             importRackStage = new ImportRackStage(importStage, user, log, true);
-
                             importRackStage.initModality(Modality.WINDOW_MODAL);
-
                             importRackStage.setBarcode(BCR);
-
-                            importRackStage.setLabware(PartitionTubeTypesList);
-
+                            importRackStage.setLabware(partitionTubeTypesList);
                             importRackStage.initOwner(scene.getWindow());
-
                             importRackStage.show();
-
                         }
                     });
-
                 }
 
             }).start();
-
             return true;
 
         } else {
             return false;
         }
-
     }
 
     public void DrawImportTable() {
@@ -1659,18 +1547,14 @@ public class ImportStage extends Application {
     public void DrawSchedulerStatus(String Status) {
 
         new Thread(new Runnable() {
-
             @Override
             public void run() {
-
                 Platform.runLater(new Runnable() {
-
                     @Override
                     public void run() {
                         lbSchedulerStatus.setText("Scheduler: " + Status);
                     }
                 });
-
             }
 
         }).start();
@@ -1680,12 +1564,20 @@ public class ImportStage extends Application {
         this.importForm = importForm;
     }
 
-    public void setImportDoor(ImportDoor importDoor) {
-        this.importDoor = importDoor;
+    public void setImportLeftDoor(ImportDoor importLeftDoor) {
+        this.importLeftDoor = importLeftDoor;
+    }
+
+    public void setImportRightDoor(ImportDoor importRightDoor) {
+        this.importRightDoor = importRightDoor;
     }
 
     public void setExportRackStage(ExportRackStage exportRackStage) {
         this.exportRackStage = exportRackStage;
+    }
+
+    public void setExportJobStage(ExportJobStage exportJobStage) {
+        this.exportJobStage = exportJobStage;
     }
 
     private void DrawTaskHistory(int id) {
@@ -1699,11 +1591,9 @@ public class ImportStage extends Application {
         }
 
         importHistoryTableView.setItems(historyTaskTableData);
-
     }
 
     private void DrawTaskProperty(int id) {
-
         propertyTaskTableData.clear();
 
         List<TaskPropertyModel> list = dm.getTaskProperty(id);
@@ -1713,11 +1603,9 @@ public class ImportStage extends Application {
         }
 
         importPropertiesTableView.setItems(propertyTaskTableData);
-
     }
 
     private void DrawPickJobDetails(int id) {
-
         titledPaneExportDetails.setContent(null);
 
         exportContentTable.getItems().clear();
@@ -1733,11 +1621,9 @@ public class ImportStage extends Application {
         exportContentTable.setItems(propertyExportTask);
 
         titledPaneExportDetails.setContent(exportContentTable);
-
     }
 
     private void DrawPickJobExportDetails(int id) {
-
         titledPaneExportDetails.setContent(null);
 
         exportRacksTable.getItems().clear();
@@ -1753,11 +1639,9 @@ public class ImportStage extends Application {
         exportRacksTable.setItems(propertyExportTask);
 
         titledPaneExportDetails.setContent(exportRacksTable);
-
     }
 
     private TableView CreateimportHistoryTableView() {
-
         TableColumn statusColumn;
         TableColumn dateColumn;
         TableColumn userColumn;
@@ -1793,7 +1677,6 @@ public class ImportStage extends Application {
     }
 
     private TableView CreateimportPropertiesTableView() {
-
         TableColumn propertyColumn;
         TableColumn valueColumn;
 
@@ -1813,8 +1696,8 @@ public class ImportStage extends Application {
         importPropertiesTableView.getColumns().addAll(propertyColumn, valueColumn);
 
         return importPropertiesTableView;
-
     }
+
     private static final DataFormat SERIALIZED_MIME_TYPE = new DataFormat("application/x-java-serialized-object");
 
     private TableView CreateExportHistoryTableView() {
@@ -1854,7 +1737,6 @@ public class ImportStage extends Application {
     }
 
     private TreeTableView CreateExportTable() {
-
         TreeTableColumn<ExportTaskTableModel, String> idColumn;
 
         TreeTableColumn taskColumn;
@@ -1874,15 +1756,11 @@ public class ImportStage extends Application {
             public TreeTableCell<ExportTaskTableModel, String> call(TreeTableColumn<ExportTaskTableModel, String> param) {
 
                 TreeTableCell<ExportTaskTableModel, String> cell = new TreeTableCell<ExportTaskTableModel, String>() {
-
                     @Override
 
                     public void updateItem(String object, boolean empty) {
-
                         if (!empty) {
-
                             if (object != null) {
-
                                 HBox box = new HBox();
 
                                 box.setSpacing(10);
@@ -1892,7 +1770,6 @@ public class ImportStage extends Application {
                                 String caption = "";
 
                                 if (object != null) {
-
                                     caption = object;
 
                                 } else {
@@ -1909,8 +1786,8 @@ public class ImportStage extends Application {
                                 HBox box = new HBox();
                                 setGraphic(box);
                             }
-                        } else {
 
+                        } else {
                             setGraphic(null);
                             setText(null);
                         }
@@ -1918,9 +1795,7 @@ public class ImportStage extends Application {
                 };
 
                 return cell;
-
             }
-
         });
 
         taskColumn = new TreeTableColumn<>("Task");
@@ -1951,11 +1826,9 @@ public class ImportStage extends Application {
             public void changed(ObservableValue<? extends TreeItem> paramObservableValue, TreeItem paramT1, TreeItem selectedItem) {
 
                 if (selectedItem != null) {
-
                     System.out.println(((ExportTaskTableModel) selectedItem.getValue()).getTask() + " - " + ((ExportTaskTableModel) selectedItem.getValue()).getIdTask());
 
                     if (((ExportTaskTableModel) selectedItem.getValue()).getIdTask() > 0) {
-
                         DrawExpotTaskHistory(((ExportTaskTableModel) selectedItem.getValue()).getIdTask());
 
                         if (((ExportTaskTableModel) selectedItem.getValue()).getTask().equals("Pick Tubes")) {
@@ -1963,18 +1836,15 @@ public class ImportStage extends Application {
                         } else {
                             DrawPickJobExportDetails(((ExportTaskTableModel) selectedItem.getValue()).getIdTask());
                         }
-
                     }
                 }
             }
-
         });
 
         exportTreeTableView.setShowRoot(false);
         exportTreeTableView.setEditable(false);
         exportTreeTableView.setPlaceholder(new Text(""));
         exportTreeTableView.getStylesheets().add("style/stylesTaskTree.css");
-
         exportTreeTableView.getColumns().addAll(idColumn, taskColumn, statusColumn, noteExportColumn);
 
         MenuItem menuCancelExport = new MenuItem("Cancel");
@@ -1988,45 +1858,56 @@ public class ImportStage extends Application {
 
             @Override
             public void handle(ActionEvent t) {
-
                 if (((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdJob() != 0) {
-
                     try {
+                        ExportRackClient exportClient = new ExportRackClient(WEB_SERVICES_URI, log);
+                        
+                        System.out.println(((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdJob());
+                        
+                        if(((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdTask()==0){
+                           
+                            int status = exportClient.deleteJob(((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdJob(), UserName);
 
-                        ExportClient exportClient = new ExportClient(WEB_SERVICES_URI, log);
-                        Sys sys = exportClient.canceExportRack(((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdJob(), UserName);
-
-                        Cmd cmd = sys.getCmds().getValue().getCmd().get(0);
-
-                        if ((cmd.getStatus() != null) && (cmd.getStatus().getValue().equals("Error"))) {
-
+                        
+                        if (status!=200) {
                             Alert alert = new Alert(AlertType.ERROR);
                             alert.setTitle("Error");
                             alert.setHeaderText("Error of cancelling the Export Job");
-                            alert.setContentText(cmd.getResult().getValue());
-
+                            //alert.setContentText();
                             alert.showAndWait();
 
-                        } else if ((cmd.getStatus() != null) && (cmd.getStatus().getValue().equals("Ok"))) {
-
+                        } else {
                             ExportRootItem.getChildren().remove((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem());
+                        }
+                        }
+                        else{
+                                
+                        int sys = exportClient.canceExportRack(((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdJob(), UserName);
 
+                       // STXCommand cmd = sys.getCommand();
+
+                        if (sys!=200) {
+                            Alert alert = new Alert(AlertType.ERROR);
+                            alert.setTitle("Error");
+                            alert.setHeaderText("Error of cancelling the Export Job");
+                          //  alert.setContentText();
+                            alert.showAndWait();
+
+                        } else if (sys==200) {
+                            ExportRootItem.getChildren().remove((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem());
                         }
 
-                    } catch (Exception E) {
-
+                    } 
+//                        
+                }
+                    catch (Exception E) {
                         Alert alert = new Alert(AlertType.ERROR);
                         alert.setTitle("Error");
                         alert.setHeaderText("Error of cancelling the Export Job");
                         alert.setContentText(E.getMessage());
-
                         alert.showAndWait();
-
                     }
-
-                }
-
-            }
+            }}
         });
 
         ContextMenu contextMenuCancelTask = new ContextMenu(menuCancelExport, separatorMenuItem, menuSequenceExport, menuContinue, menusuperP);
@@ -2038,7 +1919,6 @@ public class ImportStage extends Application {
 
             @Override
             public void handle(WindowEvent event) {
-
                 if (((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdJob() != 0) {
                     int jobId = ((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdJob();
 
@@ -2046,17 +1926,16 @@ public class ImportStage extends Application {
                     separatorMenuItem.setDisable(false);
 
                     if (dm.canSetSequence(jobId)) {
-
                         menuSequenceExport.setDisable(false);
-
                     } else {
                         menuSequenceExport.setDisable(true);
-
                     }
+
                 } else {
                     menuCancelExport.setDisable(true);
                 }
 
+                //Priority eligibilty
                 if (((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdJob() != 0) {
                     int idJob = ((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdJob();
                     String status = dm.getStatus(idJob);
@@ -2065,23 +1944,23 @@ public class ImportStage extends Application {
                     } else {
                         menusuperP.setDisable(true);
                     }
+
                 } else {
                     menuCancelExport.setDisable(true);
                     separatorMenuItem.setDisable(true);
                     menuSequenceExport.setDisable(true);
                 }
 
+                //Contiue Eligibility
                 if (((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdJob() != 0) {
-
                     int v = -1;
                     int id = ((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdJob();
                     int taskId = dm.getTaskId(id);
 
                     try {
-
                         v = fn.checkContinue(taskId);
                     } catch (Exception ex) {
-                        System.out.println("Check continue eligibility: " + ex.getMessage());
+                        System.out.println("Check continue eligibility: Not eligible " + ex.getMessage());
                     }
 
                     if (v == 1) {
@@ -2089,34 +1968,31 @@ public class ImportStage extends Application {
                     } else {
                         menuContinue.setDisable(true);
                     }
+
                 } else {
                     menuContinue.setDisable(true);
                 }
             }
         });
+
         menuContinue.setOnAction(new EventHandler<ActionEvent>() {
 
             @Override
             public void handle(ActionEvent t) {
-
                 if (((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdJob() != 0) {
-
                     try {
-
+                        
+                        int id = ((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdJob();
+                         int taskId = dm.getTaskId(id);
                         Fnclient fn = new Fnclient(WEB_SERVICES_URI, log);
-                        int status = fn.continuePick(((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdTask());
+                        int status = fn.continuePick(taskId);
 
                         if (status != 200) {
-
                             Alert alert = new Alert(AlertType.ERROR);
                             alert.setTitle("Error");
                             alert.setHeaderText("Error of continue Pick job");
                             alert.setContentText("Status:" + status);
-
                             alert.showAndWait();
-
-                        } else {
-
                         }
 
                     } catch (Exception E) {
@@ -2124,12 +2000,9 @@ public class ImportStage extends Application {
                         alert.setTitle("Error");
                         alert.setHeaderText("Error of continue Pick job");
                         alert.setContentText(E.getMessage());
-
                         alert.showAndWait();
-
                     }
                 }
-
             }
         });
 
@@ -2137,11 +2010,8 @@ public class ImportStage extends Application {
 
             @Override
             public void handle(ActionEvent t) {
-
                 if (((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdJob() != 0) {
-
                     try {
-
                         int jobId = ((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdJob();
 
                         int sequence = dm.getJobSequence(jobId);
@@ -2155,27 +2025,19 @@ public class ImportStage extends Application {
                         Optional<String> result = dialog.showAndWait();
 
                         if (result.isPresent()) {
-
                             sequence = Integer.valueOf(result.get());
-
                             SchedulerClient client = new SchedulerClient(WEB_SERVICES_URI, log);
-
                             client.setSequence(jobId, sequence);
                         }
 
                     } catch (Exception E) {
-
                         Alert alert = new Alert(AlertType.ERROR);
                         alert.setTitle("Error");
                         alert.setHeaderText("Error of set sequence");
                         alert.setContentText(E.getMessage());
-
                         alert.showAndWait();
-
                     }
-
                 }
-
             }
         });
 
@@ -2183,47 +2045,33 @@ public class ImportStage extends Application {
 
             @Override
             public void handle(ActionEvent t) {
-
                 if (((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdJob() != 0) {
-
                     try {
                         int status = fn.superP(((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getIdJob(), UserName);
-
                         if (status != 200) {
-
                             Alert alert = new Alert(AlertType.ERROR);
                             alert.setTitle("Error");
                             alert.setHeaderText("Super Priority");
                             alert.setContentText("Error of running the Super priority Job");
-
                             alert.showAndWait();
-
                         }
 
                     } catch (Exception E) {
-
                         Alert alert = new Alert(AlertType.ERROR);
                         alert.setTitle("Error");
                         alert.setHeaderText("Error of running the Super priority Job");
                         alert.setContentText(E.getMessage());
-
                         alert.showAndWait();
-
                     }
-
                 }
-
             }
         });
 
         exportTreeTableView.setContextMenu(contextMenuCancelTask);
-
         return exportTreeTableView;
-
     }
 
     private TableView CreateExportContentTable() {
-
         TableColumn srcTubeBCColumn;
         TableColumn srcXColumn;
         TableColumn srcYColumn;
@@ -2281,15 +2129,12 @@ public class ImportStage extends Application {
 
         exportContentTable = new TableView();
         exportContentTable.setPlaceholder(new Text(""));
-
         exportContentTable.getColumns().addAll(srcTubeBCColumn, srcXColumn, srcYColumn, srcRackBCColumn, trgRackBCColumn, trgXColumn, trgYColumn, statusColumn, noteExportColumn);
 
         return exportContentTable;
-
     }
 
     private TableView CreateExportRacksTable() {
-
         TableColumn plateBCColumn;
         TableColumn deviceColumn;
         TableColumn partitionColumn;
@@ -2323,67 +2168,59 @@ public class ImportStage extends Application {
 
         exportRacksTable = new TableView();
         exportRacksTable.setPlaceholder(new Text(""));
-
         exportRacksTable.getColumns().addAll(plateBCColumn, deviceColumn, partitionColumn, cassetteColumn, levelColumn);
 
-        MenuItem menuRunExport = new MenuItem("Export Rack");
-        // MenuItem menuExportJob = new MenuItem("Export Job");
-        menuRunExport.setOnAction(new EventHandler<ActionEvent>() {
+        MenuItem menuExportRack = new MenuItem("Export Rack");
+        MenuItem menuExportJob = new MenuItem("Export Job");
 
+        menuExportRack.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent t) {
-
                 ExportPlateModel item = propertyExportTask.get(exportRacksTable.getSelectionModel().getSelectedIndex());
-
+             
+                int idPick = dm.getPickID(dm.getjobId(item.getIdTask()));
+                 System.out.println(" export by rack:"+ idPick);
                 if (item != null) {
-
-                    System.out.println(item.getIdTask() + " " + item.getDevice());
-
-                    exportRackStage = new ExportRackStage(importStage, WEB_SERVICES_URI, item.getIdTask(), 0, log);
+                    System.out.println(item + " " + item.getDevice());
+                    exportRackStage = new ExportRackStage(importStage, WEB_SERVICES_URI, item.getIdTask(), 0, log, idPick);
                     exportRackStage.initModality(Modality.WINDOW_MODAL);
                     exportRackStage.initOwner(scene.getWindow());
                     exportRackStage.show();
                 }
-
             }
         });
 
-        /*       menuExportJob.setOnAction(new EventHandler<ActionEvent>() {
-
+        menuExportJob.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent t) {
-
                 ExportPlateModel item = propertyExportTask.get(exportRacksTable.getSelectionModel().getSelectedIndex());
-
+            //    String jobId = dm.getjobId(item.getIdTask());
+                int idPick = dm.getPickID(dm.getjobId(item.getIdTask()));
+                System.out.println(" export by job:"+ idPick + " ");
                 if (item != null) {
-
                     System.out.println(item.getIdTask() + " " + item.getDevice());
-
-                    exportRackStage = new ExportRackStage(importStage, WEB_SERVICES_URI, item.getIdTask(), 0, log);
-                    exportRackStage.initModality(Modality.WINDOW_MODAL);
-                    exportRackStage.initOwner(scene.getWindow());
-                    exportRackStage.show();
+                    exportJobStage = new ExportJobStage(importStage, WEB_SERVICES_URI, item.getIdTask(), Integer.toString(idPick), item.getPlateBCR(), log);
+                    exportJobStage.initModality(Modality.WINDOW_MODAL);
+                    exportJobStage.initOwner(scene.getWindow());
+                    exportJobStage.show();
                 }
-
             }
-        });*/
-        ContextMenu contextExport = new ContextMenu();
-        //    contextExport.getItems().add(menuExportJob);
-        contextExport.getItems().add(menuRunExport);
-        exportRacksTable.setContextMenu(contextExport);
-//        exportRacksTable.setContextMenu(new ContextMenu(menuRunExport));
-        return exportRacksTable;
+        });
 
+        ContextMenu contextExport = new ContextMenu();
+        contextExport.getItems().add(menuExportRack);
+        contextExport.getItems().add(menuExportJob);
+        exportRacksTable.setContextMenu(contextExport);
+
+        return exportRacksTable;
     }
 
     public void DrawImportTask(int id) {
-
         System.out.println("ID Task = " + id);
 
         ObservableList<SplitPane.Divider> dividers = SplitPaneImport.getDividers();
 
         if (dividers.size() == 1) {
-
             dividerTask = dividers.get(0).getPosition();
 
         } else {
@@ -2393,23 +2230,19 @@ public class ImportStage extends Application {
 
         SplitPaneImport.getItems().clear();
         SplitPaneImport.getItems().addAll(importTreeTableView, titledPaneImportProperties, titledPaneImportHistory);
-
         SplitPaneImport.setDividerPosition(0, dividerTask);
         SplitPaneImport.setDividerPosition(1, dividerHistory);
 
         DrawTaskHistory(id);
         DrawTaskProperty(id);
-
     }
 
     public void DrawImportJob(int idJob, int IdPlate) {
-
         System.out.println("ID Job = " + idJob);
 
         ObservableList<SplitPane.Divider> dividers = SplitPaneImport.getDividers();
 
         if (dividers.size() == 1) {
-
             dividerTask = dividers.get(0).getPosition();
 
         } else {
@@ -2419,7 +2252,6 @@ public class ImportStage extends Application {
 
         SplitPaneImport.getItems().clear();
         SplitPaneImport.getItems().addAll(importTreeTableView, titledPaneImportProperties);
-
         SplitPaneImport.setDividerPosition(0, dividerTask);
 
         propertyTaskTableData.clear();
@@ -2431,25 +2263,19 @@ public class ImportStage extends Application {
         }
 
         importPropertiesTableView.setItems(propertyTaskTableData);
-
     }
 
     public void DrawExportTask(int id) {
-
         DrawTaskHistory(id);
-
     }
 
     public void DrawExportPickTask(int id) {
-
         System.out.println("ID Task = " + id);
 
         ObservableList<SplitPane.Divider> dividers = SplitPaneImport.getDividers();
 
         if (dividers.size() == 1) {
-
             dividerTask = dividers.get(0).getPosition();
-
         } else {
             dividerTask = dividers.get(0).getPosition();
             dividerHistory = dividers.get(1).getPosition();
@@ -2457,17 +2283,14 @@ public class ImportStage extends Application {
 
         SplitPaneImport.getItems().clear();
         SplitPaneImport.getItems().addAll(importTreeTableView, titledPaneImportProperties, titledPaneImportHistory);
-
         SplitPaneImport.setDividerPosition(0, dividerTask);
         SplitPaneImport.setDividerPosition(1, dividerHistory);
 
         DrawTaskHistory(id);
         DrawTaskProperty(id);
-
     }
 
     private void DrawExpotTaskHistory(int id) {
-
         historyExportTaskTableData.clear();
         exportHistoryTable.getItems().clear();
 
@@ -2478,15 +2301,11 @@ public class ImportStage extends Application {
         }
 
         exportHistoryTable.setItems(historyExportTaskTableData);
-
     }
 
     public void ConnectToWebsocket() {
-
         try {
-
             clientEndPoint = new WebsocketClientEndpoint(this, new URI(WEB_SOCKET_URI), log);
-
             clientEndPoint.addMessageHandler(new WebsocketClientEndpoint.MessageHandler() {
 
                 public void handleMessage(final String message) {
@@ -2495,59 +2314,44 @@ public class ImportStage extends Application {
 
                         @Override
                         public void run() {
-
                             Platform.runLater(new Runnable() {
                                 @Override
                                 public void run() {
-
                                     ReadWSMessage(message);
-
                                 }
                             });
-
                         }
 
                     }).start();
-
                 }
-
             });
+
         } catch (Exception E) {
-
             clientEndPoint = null;
-
             System.out.println("Error Openning Web Socket: " + E.getMessage());
 
             StageMessage stageMessage = new StageMessage(2, "Communication Error", "Can not connect to Scheduler!");
             stageMessage.initModality(Modality.WINDOW_MODAL);
             stageMessage.initOwner(scene.getWindow());
             stageMessage.show();
-
         }
-
     }
 
     public void setDisconnectWS() {
-
         clientEndPoint = null;
 
         new Thread(new Runnable() {
 
             @Override
             public void run() {
-
                 Platform.runLater(new Runnable() {
 
                     @Override
                     public void run() {
-
                         try {
-
                             for (Device dev : Sys.getDevices()) {
-
                                 dev.setError(false);
                                 dev.setInit(false);
-
                                 dev.drawStatusGUI();
                             }
 
@@ -2562,21 +2366,15 @@ public class ImportStage extends Application {
                         StageMessage stageMessage = new StageMessage(2, "Communication Error", "Connection with Scheduler is broken!");
                         stageMessage.initModality(Modality.WINDOW_MODAL);
                         stageMessage.initOwner(scene.getWindow());
-
                         stageMessage.show();
-
                     }
-
                 });
-
             }
 
         }).start();
-
     }
 
     public TableView CreateExceptionTable() {
-
         exceptionTable = new TableView();
         exceptionTable.setPlaceholder(new Text(""));
 
@@ -2601,38 +2399,38 @@ public class ImportStage extends Application {
 
         exceptionTable.getColumns().addAll(pltExcBCColumn, pltExcCassetteColumn, pltExcLevelColumn);
 
-        MenuItem ExportRack = new MenuItem("Export");
+        MenuItem exportRack = new MenuItem("Export");
 
-        ExportRack.setOnAction(new EventHandler<ActionEvent>() {
-
+        exportRack.setOnAction(new EventHandler<ActionEvent>() {
             @Override
             public void handle(ActionEvent t) {
-
                 System.out.println(((ExportExceptioRacksModel) exceptionTable.getSelectionModel().getSelectedItem()).getIdPlate());
-
-                exportRackStage = new ExportRackStage(importStage, WEB_SERVICES_URI, 0, ((ExportExceptioRacksModel) exceptionTable.getSelectionModel().getSelectedItem()).getIdPlate(), log);
+                 ExportPlateModel item = propertyExportTask.get(exportRacksTable.getSelectionModel().getSelectedIndex());
+                String jobId = ((ExportTaskTableModel) ((TreeItem) exportTreeTableView.getSelectionModel().getSelectedItem()).getValue()).getJobId();
+                int idPick = dm.getPickID(jobId);
+                if (item != null) {
+                    System.out.println(item + " " + item.getDevice());
+                    exportRackStage = new ExportRackStage(importStage, WEB_SERVICES_URI, item.getIdTask(), 0, log, idPick);
+                   
+                    
+                exportRackStage = new ExportRackStage(importStage, WEB_SERVICES_URI, 0, ((ExportExceptioRacksModel) exceptionTable.getSelectionModel().getSelectedItem()).getIdPlate(), log,idPick);
                 exportRackStage.initModality(Modality.WINDOW_MODAL);
                 exportRackStage.initOwner(scene.getWindow());
                 exportRackStage.show();
-
+                }
             }
-        });
+                    });
 
-        exceptionTable.setContextMenu(new ContextMenu(ExportRack));
-
+        exceptionTable.setContextMenu(new ContextMenu(exportRack));
         return exceptionTable;
-
     }
 
     public void DrawExceptionPlates() {
-
         new Thread(new Runnable() {
 
             @Override
             public void run() {
-
                 Platform.runLater(new Runnable() {
-
                     @Override
                     public void run() {
                         exceptionTable.getItems().clear();
@@ -2642,17 +2440,13 @@ public class ImportStage extends Application {
             }
 
         }).start();
-
     }
 
     public void setErrorWS(String MSG) {
-
         StageMessage stageMessage = new StageMessage(2, "Communication Error", MSG);
         stageMessage.initModality(Modality.WINDOW_MODAL);
         stageMessage.initOwner(scene.getWindow());
-
         stageMessage.show();
-
     }
 
     public void DrawWarmupDelay() {
@@ -2661,53 +2455,36 @@ public class ImportStage extends Application {
 
             @Override
             public void run() {
-
                 Platform.runLater(new Runnable() {
-
                     @Override
                     public void run() {
-
                         if (dBTimer != null) {
-
                             String WarmUpDely = dBTimer.getWarupDelay();
-
                             if (!WarmUpDely.isEmpty()) {
                                 lbWarmUpTime.setText("Pending task: " + WarmUpDely);
                                 log.info("Pending task: " + WarmUpDely);
                             } else {
                                 lbWarmUpTime.setText("");
                             }
-
                         }
-
                     }
-
                 });
-
             }
 
         }).start();
-
     }
 
     public void setdBTimer(String DBdriver, String DBpath, String DBuser, String DBpassword, Logger log) {
-
         if (warmUpTimer == null) {
-
             try {
-
                 this.dBTimer = new DBTimer(DBdriver, DBpath, DBuser, DBpassword, log);
-
                 warmUpTimer = new WarmUpTimer(importStage);
-
             } catch (Exception E) {
-
             }
         }
     }
 
     public void LogOut() {
-
         log.info("LogOut");
 
         IsLogout = true;
@@ -2731,10 +2508,8 @@ public class ImportStage extends Application {
         }
 
         if (warmUpTimer != null) {
-
             warmUpTimer.Stop();
             warmUpTimer = null;
-
         }
 
         if (logOutTimer != null) {
@@ -2767,54 +2542,40 @@ public class ImportStage extends Application {
         ls.showAndWait();
 
         if (user == null) {
-
             Platform.exit();
-
         } else {
-
             IsLogout = false;
-
-            if (user.getUserRole() == 1) {
-
-            }
-
-//            logOutTimer = new LogOutTimer(importStage);
+            // logOutTimer = new LogOutTimer(importStage);
             ConnectToWebsocket();
 
             if (!ManualScannerPort.isEmpty()) {
-
                 try {
                     BCReader = new DataLogicBCReader(ManualScannerPort, this, log);
-                } catch (Exception E) {
 
+                } catch (Exception E) {
                     JOptionPane.showMessageDialog(null,
                             "Error of running manual BC Reader, Port: " + ManualScannerPort + "!",
                             "Error",
                             JOptionPane.WARNING_MESSAGE);
-
                     BCReader = null;
-
                 }
-
             }
 
             DrawImportTable();
 
-            dm.getUserLabware(PartitionTubeTypesList, user.getUserID());
+            dm.getUserLabware(partitionTubeTypesList, user.getUserID());
 
             bufferTableView.setRoot(dm.getBufferView(IdBufferDevice));
 
-            DrawCountEmptyLevels();
+           DrawCountEmptyLevels();
             DrawCountEmptyRacks();
 
             en = new DBEventNotifier(DB_HOST, DB_PATH, UserName, UserPassword, this, log);
+         en.run();
 
-            en.run();
             /*            
             try{
-                
                 clientEndPoint = new WebsocketClientEndpoint(new URI(WEB_SOCKET_URI));
-                
                 clientEndPoint.addMessageHandler(new WebsocketClientEndpoint.MessageHandler() {
                 
                 public void handleMessage(final String message) {
@@ -2823,24 +2584,16 @@ public class ImportStage extends Application {
 
                         @Override
                         public void run() {
-
                             Platform.runLater(new Runnable() {
                                 @Override
                                 public void run() {
-
                                     ReadWSMessage(message);
-
                                 }
                             });
-
                         }
 
-                    }).start();                    
-                    
-                    
-                    
+                    }).start();                  
                 }
-                
             });                                
             }catch(Exception E){
                 System.out.println("Error Openning Web Socket: "+E.getMessage());
@@ -2851,13 +2604,10 @@ public class ImportStage extends Application {
                 stageMessage.show();
             }
              */
-
         }
-
     }
 
     public void UpdateContentGUI() {
-
         // Buffer
         DrawBuffer();
 
@@ -2875,7 +2625,6 @@ public class ImportStage extends Application {
         exportTreeTableView.setRoot(ExportRootItem);
         DrawExpotTaskHistory(0);
         DrawPickJobDetails(0);
-
     }
 
     public Date getLastAccessDate() {
@@ -2891,28 +2640,20 @@ public class ImportStage extends Application {
 
             @Override
             public void run() {
-
-                Platform.runLater(new Runnable() {
-                
+                Platform.runLater(new Runnable() { 
+        
                     @Override
-                    public void run() {
-                        
-                        System.out.println("Check log out");
-                        
-                        Date date = new Date();
-                        
+                    public void run() {                        
+                        System.out.println("Check log out");                        
+                        Date date = new Date();                        
                         System.out.println("Check log out: "+ ((lastAccessDate.getTime() + 3*60 *1000)  -  date.getTime()));
-                        
                         if((lastAccessDate.getTime() + 3*60 *1000) <= date.getTime()){
                             System.out.println("Log Out!");
                             log.info("Log Out Timer");
                             LogOut();
-                        }
-                        
-                    }
-                    
+                        }                        
+                    }                    
                 });
-
             }
 
         }).start();        

@@ -23,7 +23,10 @@ import javafx.stage.WindowEvent;
 import org.apache.logging.log4j.Logger;
 
 public class ImportDoor extends Stage {
-
+    
+    public static final String IMPORT_VIA_LEFT_BUFFER = "Import via Left Buffer";
+    public static final String IMPORT_VIA_RIGHT_BUFFER = "Import via Right Buffer";
+    
     private Scene scene;
 
     private BorderPane root;
@@ -37,18 +40,20 @@ public class ImportDoor extends Stage {
     private HBox hBoxIndicator;
     private ProgressIndicator progressIndicator;
     private ImportStage importStage;
-    private ImageView imageViewInfo;
 
     private int CmdId = 0;
 
     private Logger log;
     private String WebServiceUri;
+    
+    private final String importType;
 
-    public ImportDoor(ImportStage importStage, String WebServiceUri, Logger log) {
+    public ImportDoor(ImportStage importStage, String WebServiceUri, Logger log, String importType) {
 
         this.importStage = importStage;
         this.log = log;
         this.WebServiceUri = WebServiceUri;
+        this.importType = importType;
 
         log.info("Open ImportDoor window");
 
@@ -91,42 +96,44 @@ public class ImportDoor extends Stage {
         root.setBottom(hBoxButton);
 
         setOnShown(new EventHandler<WindowEvent>() {
-
             @Override
             public void handle(WindowEvent t) {
-                RunDoorImport();
+                
+                if(IMPORT_VIA_LEFT_BUFFER.equals(getImportType())){
+                    RunDoorImport("Buffer1");
+                }
+                else if(IMPORT_VIA_RIGHT_BUFFER.equals(getImportType())){
+                    RunDoorImport("Buffer2");                
             }
-
+            }
         });
 
         scene = new Scene(root, 300, 150);
-
-        setTitle("Import via user door");
+        
+        setTitle(IMPORT_VIA_LEFT_BUFFER.equals(getImportType()) ? "Import via Left Buffer" :  "Import via Right Buffer");
         setScene(scene);
 
         btnClose.setOnAction(new EventHandler<ActionEvent>() {
-
             @Override
             public void handle(ActionEvent event) {
-
                 close();
-
             }
         });
 
         setOnHiding(new EventHandler<WindowEvent>() {
-
             @Override
             public void handle(WindowEvent t) {
-
-                importStage.setImportDoor(null);
+                if (IMPORT_VIA_LEFT_BUFFER.equals(getImportType())) {
+                    importStage.setImportLeftDoor(null);
+                } else if (IMPORT_VIA_RIGHT_BUFFER.equals(getImportType())) {
+                    importStage.setImportRightDoor(null);
+                }
             }
-
         });
 
     }
 
-    public void RunDoorImport() {
+    public void RunDoorImport(String bufferName) {
 
         new Thread(new Runnable() {
 
@@ -141,7 +148,7 @@ public class ImportDoor extends Stage {
                         try {
 
                             ImportClient importClient = new ImportClient(WebServiceUri, log);
-                            Sys sys = importClient.runImportFromBuffer();
+                            Sys sys = importClient.runImportFromBuffer(bufferName);
 
                             Cmd cmd = sys.getCmds().getValue().getCmd().get(0);
 
@@ -177,14 +184,11 @@ public class ImportDoor extends Stage {
                             hBoxIndicator.getChildren().add(imageView);
 
                             btnClose.setDisable(false);
-
                         }
-
                     }
                 });
             }
         }).start();
-
     }
 
     public void SetCmdReply(int IdCmd, String CmdResult, String CmdValue) {
@@ -222,15 +226,15 @@ public class ImportDoor extends Stage {
                                 btnClose.setDisable(false);
 
                             }
-
                         }
                     });
                 }
-
             }).start();
-
         }
-
+    }
+    
+    private String getImportType() {
+        return this.importType;
     }
 
 }
