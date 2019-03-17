@@ -5,8 +5,10 @@
  */
 package com.liconic.rest.client;
 
+import com.liconic.binding.stx.STXRequest;
 import com.liconic.binding.sys.ObjectFactory;
 import com.liconic.binding.sys.Sys;
+import com.liconic.utils.XMLUtil;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
@@ -36,8 +38,9 @@ public class Fnclient {
             log.error("fn create Client: " + E.getMessage());
         }
         try {
-            webTarget = client.target(url).path("scheduler");
-            
+           String path = "/scheduler";
+            webTarget = client.target(url).path(path);
+            log.info("Check continue eligibilty REST API Endpoint: " + url + path);
             
         } catch (Exception E) {
             log.error("Fn create WebTarget: " + E.getMessage());
@@ -77,8 +80,7 @@ public class Fnclient {
         try {
             log.info("Check continue eligibility");
             String id = Integer.toString(idtask);
-            System.out.println("task"+ idtask);
-            System.out.println("task"+ webTarget.getUri().getPath());
+           
             sys = webTarget.path("tasks").path("{idtask}").resolveTemplate("idtask", id).request(MediaType.APPLICATION_XML).get(Sys.class);
             
              } catch (Exception E) {

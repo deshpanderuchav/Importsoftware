@@ -1,6 +1,7 @@
 package com.liconic.db;
 
 import com.liconic.stages.ImportStage;
+
 import org.firebirdsql.event.DatabaseEvent;
 import org.firebirdsql.event.EventListener;
 import org.firebirdsql.event.EventManager;
@@ -22,7 +23,6 @@ public class DBEventNotifier {
 
     //private static final int TIMEOUT = 10000;
     public DBEventNotifier(String host, String database, String user, String pass, ImportStage importStage, Logger log) {
-
         this.host = host;
         this.database = database;
         this.user = user;

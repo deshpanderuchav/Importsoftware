@@ -8,7 +8,6 @@ import com.liconic.hardware.KIWISystem;
 import com.liconic.hardware.Level;
 import com.liconic.labware.configuration.PartitionTubeTypes;
 import com.liconic.labware.configuration.RackTubeType;
-import com.liconic.stages.ImportStage;
 import com.liconic.table.exporttasks.ExportExceptioRacksModel;
 import com.liconic.table.exporttasks.ExportPlateModel;
 import com.liconic.table.exporttasks.ExportTaskTableModel;
@@ -18,6 +17,7 @@ import com.liconic.table.importtasks.TaskHistoryModel;
 import com.liconic.table.importtasks.TaskPropertyModel;
 import com.liconic.table.settings.SettingsTableRecord;
 import com.liconic.user.User;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -45,27 +45,22 @@ public class DM {
     private DateFormat df = new SimpleDateFormat("HH:mm MM.dd.yyyy");
 
     public DM(String DBdriver, String DBpath, String DBuser, String DBpassword, Logger log) throws Exception {
-
         this.DBpath = DBpath;
         this.DBuser = DBuser;
         this.DBpassword = DBpassword;
         this.log = log;
 
         Class.forName(DBdriver);
-
     }
 
     public Connection getConnection() {
-
         try {
             return DriverManager.getConnection(DBpath, DBuser, DBpassword);
         } catch (SQLException E) {
-
             System.err.println("101: " + E.getMessage() + "  " + E.getSQLState());
             log.error("Get DB connection: " + E.getMessage() + "  " + E.getSQLState());
             return null;
         }
-
     }
 
     public synchronized User getUser(String Login) throws SQLException {
@@ -84,9 +79,9 @@ public class DM {
 
             connection = DriverManager.getConnection(DBpath, DBuser, DBpassword);
 
-            SQLVal = "SELECT id_user, user_name, user_second_name, user_login, user_e_mail, user_role "
-                    + "FROM users "
-                    + "WHERE UPPER(user_login)=? AND user_deleted=0";
+            SQLVal = "SELECT id_user, user_name, user_second_name, user_login, user_e_mail, user_role \n" +
+"                 FROM users \n" +
+"              WHERE UPPER(user_login)=? AND user_deleted=0";
 
             prepstat = connection.prepareStatement(SQLVal);
 
@@ -139,10 +134,7 @@ public class DM {
 
             conn = getConnection();
 
-            SQLVal = "SELECT id_system, system_id, id_device, device_id, dev_count "
-                    + "FROM SYSTEMS, DEVICES "
-                    + "WHERE device_system=id_system "
-                    + "ORDER BY id_system, dev_count";
+            SQLVal = "SELECT id_system, system_id FROM systems";
 
             prepstat = conn.prepareStatement(SQLVal);
 
@@ -153,21 +145,33 @@ public class DM {
                 if (system == null) {
                     system = new KIWISystem(rs.getInt("id_system"), rs.getString("system_id"));
                 }
-
-                Device dev = new Device(rs.getInt("id_device"), rs.getString("device_id"));
-
-                system.AddDevice(dev);
-
+                
             }
+            
+            rs.close();
+            prepstat.close();
+            
+            SQLVal = "SELECT id_device, device_id from devices";
+
+            prepstat = conn.prepareStatement(SQLVal);
+
+            rs = prepstat.executeQuery();
+
+             while (rs.next()) {
+                Device devs = new Device(rs.getInt("id_device"), rs.getString("device_id"));
+
+                system.AddDevice(devs);
+             }
 
             rs.close();
             prepstat.close();
+        
 
             for (Device dev : system.getDevices()) {
 
-                SQLVal = "SELECT param_name "
-                        + "FROM param_link_device, device_params "
-                        + "WHERE link_device=? AND link_param=id_device_params";
+                SQLVal = "SELECT param_name\n" +
+"                       FROM param_link_device, device_params \n" +
+"                       WHERE link_device=? AND link_param=ID_PARAM_LINK_DEVICE";
 
                 prepstat = conn.prepareStatement(SQLVal);
 
@@ -216,16 +220,11 @@ public class DM {
 
             conn = getConnection();
 
-            SQLVal = "SELECT COUNT(DISTINCT id_level) "
-                    + "FROM levels L, cassettes, cassette_link_partition, user_link_partition, partition "
-                    + "WHERE cassette_device=? AND cassette_link_partition.link_partition=id_partition AND "
-                    + "link_cassette=id_cassette AND user_link_partition.link_partition=id_partition AND "
-                    + "link_user=? AND level_cassette=id_cassette "
-                    + "AND NOT EXISTS "
-                    + "( "
-                    + "    SELECT link_level FROM plate_link_level "
-                    + "    WHERE link_level=l.id_level "
-                    + ")";
+            SQLVal = "SELECT COUNT(DISTINCT id_level) FROM levels L, cassettes, cassette_link_partition, user_link_partition, "
+                    + "partitions WHERE cassette_device=? "
+                    + "AND cassette_link_partition.link_partition=id_partition AND link_cassette=id_cassette "
+                    + "AND user_link_partition.link_partition=id_partition AND link_user=? "
+                    + "AND level_cassette=id_cassette AND link_plate=NULL";
 
             prepstat = conn.prepareStatement(SQLVal);
 
@@ -266,29 +265,19 @@ public class DM {
         try {
             conn = getConnection();
 
-            SQLVal = "SELECT count(DISTINCT id_plate) "
-                    + "FROM cassette_link_partition, cassettes, levels, plate_link_level, plates P, plate_link_tube_pos TLTP,user_link_partition, partition "
-                    + "WHERE cassette_device=? AND cassette_link_partition.link_partition=id_partition AND "
-                    + "link_cassette=id_cassette AND user_link_partition.link_partition=id_partition AND link_user=? AND "
-                    + "level_cassette=id_cassette AND "
-                    + "link_level=id_level AND plate_link_level.link_plate=id_plate AND TLTP.link_plate=id_plate "
-                    + "AND NOT EXISTS "
-                    + "( "
-                    + "  SELECT plate_link_tube_pos.link_plate "
-                    + "  FROM plate_link_tube_pos, tubes_link_plate "
-                    + "  WHERE link_pos=id_link_tube_pos AND plate_link_tube_pos.link_plate=P.id_plate "
-                    + ") "
-                    + "AND NOT EXISTS "
-                    + "( "
-                    + "  SELECT plate_link_tube_pos.link_plate "
-                    + "  FROM plate_link_tube_pos, tube_pos_link_task "
-                    + "  WHERE tube_pos_link_task.link_tube_pos=id_link_tube_pos AND plate_link_tube_pos.link_plate=p.id_plate "
-                    + ")";
+            SQLVal = "SELECT count(DISTINCT id_plate) FROM cassette_link_partition, cassettes, levels, plates P, plate_link_tube_pos,"
+                    + " user_link_partition, partitions "
+                    + "WHERE cassette_device="+IdDevice+" AND cassette_link_partition.link_partition=id_partition "
+                    + "AND link_cassette=id_cassette AND user_link_partition.link_partition=id_partition "
+                    + "AND link_user="+idUser +" AND level_cassette=id_cassette AND levels.link_plate=id_plate "
+                    + "AND plate_link_tube_pos.link_plate=id_plate AND link_tube=NULL "
+                    + "AND NOT EXISTS (   SELECT plate_link_tube_pos.link_plate   FROM plate_link_tube_pos, tube_pos_link_task   "
+                    + "WHERE tube_pos_link_task.link_tube_pos=id_link_tube_pos AND plate_link_tube_pos.link_plate=p.id_plate )";
 
             prepstat = conn.prepareStatement(SQLVal);
 
-            prepstat.setInt(1, IdDevice);
-            prepstat.setInt(2, idUser);
+         //   prepstat.setInt(1, IdDevice);
+           // prepstat.setInt(2, idUser);
 
             rs = prepstat.executeQuery();
 
@@ -325,25 +314,14 @@ public class DM {
 
             conn = getConnection();
 
-            SQLVal = "SELECT id_cassette, cassette_id, id_level, level_cassette_number, id_plate, plate_bcr, link_task, type_number "
-                    + "FROM cassettes "
-                    + "INNER JOIN levels ON level_cassette=id_cassette "
-                    + "LEFT JOIN plate_link_level ON link_level=id_level "
-                    + "LEFT JOIN plates P ON plate_link_level.link_plate=id_plate "
-                    + "LEFT JOIN plate_link_task ON plate_link_task.link_plate=id_plate AND link_task IN "
-                    + "( "
-                    + "  SELECT MAX(link_task) "
-                    + "  FROM plate_link_task "
-                    + "  WHERE plate_link_task.link_plate=P.id_plate "
-                    + ")"
-                    + "LEFT JOIN cassette_configuration ON plate_conf=id_cassette_conf "
-                    + "WHERE cassette_device=? "
-                    + "GROUP BY id_cassette, cassette_id, id_level, level_cassette_number, id_plate, plate_bcr, link_task, type_number "
-                    + "ORDER BY cassette_id, level_cassette_number DESC";
+            SQLVal = "SELECT id_cassette, cassette_id, id_level, level_id, id_plate, plate_bc, link_task, rack_conf_id FROM cassettes "
+                    + "INNER JOIN levels ON level_cassette=id_cassette LEFT JOIN plates P ON levels.link_plate=id_plate LEFT JOIN plate_link_task ON plate_link_task.link_plate=id_plate "
+                    + "AND link_task IN (   SELECT MAX(link_task)   FROM plate_link_task   WHERE plate_link_task.link_plate=P.id_plate ) LEFT JOIN rack_configuration ON plate_conf=id_rack_conf "
+                    + "WHERE cassette_device="+IdDevice +" GROUP BY id_cassette, cassette_id, id_level, level_id, id_plate, plate_bc, link_task, rack_conf_id ORDER BY cassette_id, level_id DESC";
 
             prepstat = conn.prepareStatement(SQLVal);
 
-            prepstat.setInt(1, IdDevice);
+        //    prepstat.setInt(1, IdDevice);
 
             rs = prepstat.executeQuery();
 
@@ -365,11 +343,11 @@ public class DM {
                     idCassette = rs.getInt("id_cassette");
                 }
 
-                level = new Level(rs.getInt("id_level"), rs.getInt("level_cassette_number"), rs.getInt("cassette_id"), 0);
+                level = new Level(rs.getInt("id_level"), rs.getInt("level_id"), rs.getInt("cassette_id"), 0);
 
                 if (rs.getInt("id_plate") > 0) {
 
-                    plate = new Plate(rs.getInt("id_plate"), rs.getString("plate_bcr"), "", rs.getInt("type_number"));
+                    plate = new Plate(rs.getInt("id_plate"), rs.getString("plate_bc"), "", rs.getInt("type_number"));
                     level.setPlate(plate);
 
                     if (rs.getInt("link_task") == 0) {
@@ -416,9 +394,9 @@ public class DM {
 
             conn = getConnection();
 
-            SQLVal = "SELECT partition_id "
-                    + "FROM user_link_partition, partition "
-                    + "WHERE link_partition=id_partition AND link_user=?";
+            SQLVal = "SELECT partition_id \n" +
+"                    FROM user_link_partition, PARTITIONS \n" +
+"                    WHERE link_partition=id_partition AND link_user=?";
 
             prepstat = conn.prepareStatement(SQLVal);
 
@@ -448,18 +426,12 @@ public class DM {
 
                         for (RackTubeType rtt : ptt.getTubesTypes()) {
 
-                            SQLVal = "SELECT id_cassette_conf, type_number, type_name, id_tybe_type, tybe_type_name, tube_type "
-                                    + "FROM cassette_configuration CC, plate_types_link_tubes, tube_types TT "
-                                    + "WHERE link_plate_type=id_cassette_conf AND link_tube_type=id_tybe_type "
-                                    + "AND tybe_type_name=? "
-                                    + "AND id_cassette_conf NOT IN "
-                                    + "("
-                                    + "  SELECT id_cassette_conf "
-                                    + "  FROM cassette_configuration, plate_types_link_tubes, tube_types "
-                                    + "  WHERE link_plate_type=id_cassette_conf AND link_tube_type=id_tybe_type AND "
-                                    + "  id_cassette_conf=CC.id_cassette_conf AND id_tybe_type<>TT.id_tybe_type "
-                                    + ")"
-                                    + "GROUP BY id_cassette_conf, type_number, type_name, id_tybe_type, tybe_type_name, tube_type";
+                            SQLVal = "SELECT id_rack_conf, rack_conf_name, rack_conf_id, id_tube_type, tube_type_name, tube_type\n" +
+"FROM cassette_link_partition, partitions, cassettes,\n" +
+"cassette_configuration, cassettes_types_link_racks, rack_configuration, plate_types_link_tubes, tubes_types\n" +
+"WHERE partition_id=? AND link_partition=id_partition AND link_cassette=id_cassette AND\n" +
+"link_cassette_type=id_cassette_conf AND link_rack_type=id_rack_conf AND link_plate_type=id_rack_conf AND link_tube_type=id_tube_type\n" +
+"GROUP BY id_rack_conf, rack_conf_name, rack_conf_id, id_tube_type, tube_type_name, tube_type";
 
                             prepstat = conn.prepareStatement(SQLVal);
 
@@ -473,12 +445,12 @@ public class DM {
 
                                 System.out.println("OK");
 
-                                rtt.setRackTypeID(rs.getInt("id_cassette_conf"));
-                                rtt.setRackType(rs.getInt("type_number"));
-                                rtt.setRackTypeName(rs.getString("type_name"));
+                                rtt.setRackTypeID(rs.getInt(1));
+                                rtt.setRackType(rs.getInt(2));
+                                rtt.setRackTypeName(rs.getString(3));
 
-                                rtt.setTubeTypeID(rs.getInt("id_tybe_type"));
-                                rtt.setTubeType(rs.getInt("tube_type"));
+                                rtt.setTubeTypeID(rs.getInt(4));
+                                rtt.setTubeType(rs.getInt(6));
 
                                 break;
 
@@ -504,23 +476,23 @@ public class DM {
 
     }
 
-    public String getStatus(int id){
+    public String getStatus(int id) {
         PreparedStatement stat;
         ResultSet rs;
         Connection conn = null;
 
         String SQLVal;
-        String status  = "";
+        String status = "";
 
         try {
 
             conn = DriverManager.getConnection(DBpath, DBuser, DBpassword);
-            
-              SQLVal = "select id_task, ID_JOB, TASK_STATUS from tasks inner join jobs on tasks.LINK_JOB = jobs.ID_JOB \n" +
+
+            SQLVal = "select id_task, ID_JOB, TASK_STATUS from tasks inner join jobs on tasks.LINK_JOB = jobs.ID_JOB\n" +
 "inner join TASK_LINK_STATUS on TASK_LINK_STATUS.LINK_TASK = tasks.ID_TASK\n" +
 "inner join task_status on TASK_STATUS.ID_TASK_STATUS = TASK_LINK_STATUS.LINK_STATUS\n" +
-" where id_job = ?\n" +
-" order by TASK_STATUS.ID_TASK_STATUS ";
+"where id_job = ?\n" +
+"order by TASK_STATUS.ID_TASK_STATUS";
 
             stat = conn.prepareStatement(SQLVal);
 
@@ -532,31 +504,32 @@ public class DM {
                 status = rs.getString("TASK_STATUS");
 
             }
-           
+
             rs.close();
             stat.close();
             conn.close();
-             
-    }catch (Exception E) {
+
+        } catch (Exception E) {
             System.out.println("ERROR: gettaskId:  " + E.getMessage());
             log.error("ERROR: gettaskId:  " + E.getMessage());
-        
-    }
+
+        }
         return status;
     }
-    public int getTaskId(int jobid){
+
+    public int getTaskId(int jobid) {
         PreparedStatement stat;
         ResultSet rs;
         Connection conn = null;
 
         String SQLVal;
-        int taskId=0;
+        int taskId = 0;
 
         try {
 
             conn = DriverManager.getConnection(DBpath, DBuser, DBpassword);
-            
-              SQLVal = "select id_task, ID_JOB from tasks inner join jobs on tasks.LINK_JOB = jobs.ID_JOB where id_job = ?";
+
+            SQLVal = "select id_task, ID_JOB from tasks inner join jobs on tasks.LINK_JOB = jobs.ID_JOB where id_job = ?";
 
             stat = conn.prepareStatement(SQLVal);
 
@@ -568,19 +541,19 @@ public class DM {
                 taskId = rs.getInt("ID_TASK");
 
             }
-           
+
             rs.close();
             stat.close();
             conn.close();
-             
-    }catch (Exception E) {
+
+        } catch (Exception E) {
             System.out.println("ERROR: gettaskId:  " + E.getMessage());
             log.error("ERROR: gettaskId:  " + E.getMessage());
-        
-    }
+
+        }
         return taskId;
     }
-        
+
     public synchronized int IsImportRackExists(String Barcode) {
 
         PreparedStatement stat;
@@ -588,15 +561,15 @@ public class DM {
         Connection conn = null;
 
         String SQLVal;
-        
+
         try {
 
             conn = DriverManager.getConnection(DBpath, DBuser, DBpassword);
 
             // Find in loaded
-            SQLVal = "SELECT id_plate "
-                    + "FROM plates, plate_link_level "
-                    + "WHERE plate_bcr=? AND link_plate=id_plate";
+            SQLVal = "SELECT ID_PLATE \n" +
+"                FROM plates, levels\n" +
+"                WHERE plate_bc=? AND link_plate=id_plate";
 
             stat = conn.prepareStatement(SQLVal);
 
@@ -676,7 +649,7 @@ public class DM {
             conn = DriverManager.getConnection(DBpath, DBuser, DBpassword);
 
             // Inset Plate
-            SQLVal = "INSERT INTO plates (plate_bcr, plate_conf, plate_preloaded) VALUES (?, ?, ?)";
+            SQLVal = "INSERT INTO plates (plate_bc, plate_conf, plate_preloaded) VALUES (?, ?, ?)";
 
             stat = conn.prepareStatement(SQLVal);
 
@@ -687,7 +660,7 @@ public class DM {
             stat.executeUpdate();
             stat.close();
 
-            SQLVal = "SELECT id_plate FROM plates WHERE plate_bcr=? AND plate_conf=? AND plate_preloaded=?";
+            SQLVal = "SELECT id_plate FROM plates WHERE plate_bc=? AND plate_conf=? AND plate_preloaded=?";
 
             stat = conn.prepareStatement(SQLVal);
 
@@ -883,43 +856,33 @@ public class DM {
 
             stat.close();
 
-            if (JobPropertyValue != null) {
-
-                int idJobLinkProperty = 0;
-
-                SQLVal = "SELECT id_job_link_property "
-                        + "FROM job_link_property "
-                        + "WHERE link_job=? AND link_property=?";
-
-                stat = conn.prepareStatement(SQLVal);
-
-                stat.setInt(1, idJob);
-                stat.setInt(2, IdJobProperty);
-
-                rs = stat.executeQuery();
-
-                while (rs.next()) {
-                    idJobLinkProperty = rs.getInt("id_job_link_property");
-                    break;
-                }
-
-                rs.close();
-                stat.close();
-
-                SQLVal = "INSERT INTO job_property_values "
-                        + "(job_property_value, link_job_property) "
-                        + "VALUES (?, ?)";
-
-                stat = conn.prepareStatement(SQLVal);
-
-                stat.setString(1, JobPropertyValue);
-                stat.setInt(2, idJobLinkProperty);
-
-                stat.executeUpdate();
-
-                stat.close();
-
-            }
+       if (JobPropertyValue != null)
+       {
+           SQLVal = "INSERT INTO job_link_property (link_job, link_property, job_property_value) VALUES (?, ?, ?)";
+           
+           stat = conn.prepareStatement(SQLVal);
+           
+           stat.setInt(1, idJob);
+           stat.setInt(2, IdJobProperty);
+           stat.setString(3, JobPropertyValue);
+           
+           stat.executeUpdate();
+           
+           stat.close();
+       }
+       else
+       {
+           SQLVal = "INSERT INTO job_link_property (link_job, link_property) VALUES (?, ?)";
+           
+           stat = conn.prepareStatement(SQLVal);
+           
+           stat.setInt(1, idJob);
+           stat.setInt(2, IdJobProperty);
+           
+           stat.executeUpdate();
+           
+        stat.close();
+      }
 
             conn.close();
 
@@ -978,7 +941,8 @@ public class DM {
             rs.close();
             stat.close();
 
-            SQLVal = "INSERT INTO tasks (task_user, task_time, task_type, task_sequence, link_job) VALUES (?, current_timestamp, ?, ?, ?)";
+            SQLVal = "INSERT INTO tasks (task_user, task_time, task_type, task_sequence, link_job) VALUES "
+                    + "(?, current_timestamp, ?, ?, ?)";
 
             stat = conn.prepareStatement(SQLVal);
 
@@ -1110,8 +1074,9 @@ public class DM {
 
             stat.close();
 
-            if (TaskPropertyValue != null) {
-
+            if (TaskPropertyValue == null) {
+                
+            } else {
                 int idTaskLinkProperty = 0;
 
                 SQLVal = "SELECT id_task_link_property "
@@ -1133,19 +1098,16 @@ public class DM {
                 rs.close();
                 stat.close();
 
-                SQLVal = "INSERT INTO task_property_values "
-                        + "(task_property_value, link_task_property) "
-                        + "VALUES (?, ?)";
-
-                stat = conn.prepareStatement(SQLVal);
-
-                stat.setString(1, TaskPropertyValue);
-                stat.setInt(2, idTaskLinkProperty);
-
-                stat.executeUpdate();
+                SQLVal = "INSERT INTO task_link_property (link_task, link_property, task_property_value) VALUES (?, ?, ?)";
+        
+        stat = conn.prepareStatement(SQLVal);
+        
+        stat.setInt(1, idTask);
+        stat.setInt(2, IdTaskProperty);
+        stat.setString(3, TaskPropertyValue);
+        stat.executeUpdate();
 
                 stat.close();
-
             }
 
             conn.close();
@@ -1235,40 +1197,21 @@ public class DM {
 
             conn = DriverManager.getConnection(DBpath, DBuser, DBpassword);
 
-            SQLVal = "SELECT id_job, id_task, task_types.task_type, task_status, id_plate, plate_bcr, task_sequence, note "
-                    + "FROM jobs, job_types, tasks T, task_types, task_link_status, task_status, "
-                    + "task_src_link_trg, plate_link_task,  plates "
-                    + "WHERE done=0 AND jobs.job_type=job_types.id_job_type AND job_types.job_type=? AND "
-                    + "link_job=id_job AND T.task_type=id_task_type AND task_link_status.link_task=id_task AND "
-                    + "task_link_status.link_status=id_task_status AND task_src_link_trg.link_task=id_task AND "
-                    + "plate_link_task.link_task=id_src_link_trg AND link_plate=id_plate AND "
-                    + "id_task_link_status= "
-                    + "( "
-                    + "    SELECT MAX(id_task_link_status) "
-                    + "    FROM task_link_status "
-                    + "    WHERE link_task=T.id_task "
-                    + ") "
-                    + "AND jobs.link_user IN( "
-                    + "  SELECT id_user "
-                    + "  FROM users, user_link_partition "
-                    + "  WHERE link_user=id_user AND link_partition IN ( "
-                    + "    SELECT id_partition "
-                    + "    FROM users, user_link_partition, partition, cassette_link_partition, cassettes, devices, "
-                    + "    device_params, param_link_device "
-                    + "    WHERE param_name=? AND id_device_params=link_param AND link_device=id_device AND "
-                    + "    cassette_device=id_device AND cassette_link_partition.link_cassette=id_cassette AND "
-                    + "    cassette_link_partition.link_partition=id_partition AND "
-                    + "    user_link_partition.link_partition=id_partition AND link_user=id_user AND id_user=? "
-                    + "    GROUP BY id_partition, partition_id "
-                    + "  ) "
-                    + ") "
-                    + "GROUP BY id_job, id_task, task_types.task_type, task_status, id_plate, plate_bcr, task_sequence, note "
-                    + "ORDER BY id_job, task_sequence";
+            SQLVal = "SELECT id_job, id_task, task_types.task_type, task_status, id_plate, plate_bc, task_sequence, note FROM jobs, job_types, tasks T, "
+                    + "task_types, task_link_status, task_status, task_src_link_trg, plate_link_task,  plates WHERE done=0 AND jobs.job_type=job_types.id_job_type AND job_types.job_type='Import' "
+                    + "AND link_job=id_job AND T.task_type=id_task_type AND task_link_status.link_task=id_task AND task_link_status.link_status=id_task_status AND task_src_link_trg.link_task=id_task AND "
+                    + "plate_link_task.link_task=id_src_link_trg AND link_plate=id_plate AND id_task_link_status= (     SELECT MAX(id_task_link_status)     FROM task_link_status     WHERE link_task=T.id_task )"
+                    + " AND jobs.link_user IN(   SELECT id_user   FROM users, user_link_partition   WHERE link_user=id_user AND link_partition IN"
+                    + " (     SELECT id_partition     FROM users, user_link_partition, partitions, cassette_link_partition, cassettes, devices,    "
+                    + " device_params, param_link_device     WHERE param_name='Storage' AND id_param=link_param AND link_device=id_device AND    "
+                    + " cassette_device=id_device AND cassette_link_partition.link_cassette=id_cassette AND     "
+                    + "cassette_link_partition.link_partition=id_partition AND     user_link_partition.link_partition=id_partition AND link_user=id_user "
+                    + "AND id_user="+idUser+" "
+                    + "GROUP BY id_partition, partition_id   ) ) GROUP BY id_job, id_task, task_types.task_type, task_status, id_plate, plate_bc, task_sequence, note ORDER BY id_job, task_sequence";
 
             stat = conn.prepareStatement(SQLVal);
-            stat.setString(1, "Import");
-            stat.setString(2, "Storage");
-            stat.setInt(3, idUser);
+            
+       //     stat.setString(2, "Storage");
 
             rs = stat.executeQuery();
 
@@ -1282,7 +1225,7 @@ public class DM {
 
                     id_Job = rs.getInt("id_job");
 
-                    Plate plate = new Plate(rs.getInt("id_plate"), rs.getString("plate_bcr"), "", 0);
+                    Plate plate = new Plate(rs.getInt("id_plate"), rs.getString("plate_bc"), "", 0);
 
                     jobItem = new TreeItem<>(new ImportTaskTableModel(plate, id_Job, "", "", "", Jobcount));
 
@@ -1344,39 +1287,22 @@ public class DM {
 
             conn = DriverManager.getConnection(DBpath, DBuser, DBpassword);
 
-            SQLVal = "SELECT id_job, job_id, id_task, task_types.task_type, task_status, task_sequence, note, job_sequence "
-                    + "FROM jobs, job_types, tasks T, task_types, task_link_status, task_status "
-                    + "WHERE done=0 AND jobs.job_type=job_types.id_job_type AND (job_types.job_type=? OR job_types.job_type=?) AND "
-                    + "link_job=id_job AND T.task_type=id_task_type AND task_link_status.link_task=id_task AND "
-                    + "task_link_status.link_status=id_task_status AND "
-                    + "id_task_link_status= "
-                    + "( "
-                    + "    SELECT MAX(id_task_link_status) "
-                    + "    FROM task_link_status "
-                    + "    WHERE link_task=T.id_task "
-                    + ") "
-                    + "AND jobs.link_user IN( "
-                    + "  SELECT id_user "
-                    + "  FROM users, user_link_partition "
-                    + "  WHERE link_user=id_user AND link_partition IN ( "
-                    + "    SELECT id_partition "
-                    + "    FROM users, user_link_partition, partition, cassette_link_partition, cassettes, devices, "
-                    + "    device_params, param_link_device "
-                    + "    WHERE param_name=? AND id_device_params=link_param AND link_device=id_device AND "
-                    + "    cassette_device=id_device AND cassette_link_partition.link_cassette=id_cassette AND "
-                    + "    cassette_link_partition.link_partition=id_partition AND "
-                    + "    user_link_partition.link_partition=id_partition AND link_user=id_user AND id_user=? "
-                    + "    GROUP BY id_partition, partition_id "
-                    + "  ) "
-                    + ") "
-                    + "GROUP BY id_job, job_id, id_task, task_types.task_type, task_status, task_sequence, note, job_sequence "
-                    + "ORDER BY job_sequence, id_job, task_sequence";
+            SQLVal = "SELECT id_job, job_id, id_task, task_types.task_type, task_status, task_sequence, note FROM jobs, job_types, tasks T, task_types, task_link_status, task_status "
+                    + "WHERE done=0 AND jobs.job_type=job_types.id_job_type AND (job_types.job_type='Job File' OR job_types.job_type='Export') AND link_job=id_job AND T.task_type=id_task_type "
+                    + "AND task_link_status.link_task=id_task AND task_link_status.link_status=id_task_status AND id_task_link_status= (     SELECT MAX(id_task_link_status)     "
+                    + "FROM task_link_status     WHERE link_task=T.id_task ) AND jobs.link_user IN(   SELECT id_user   FROM users, user_link_partition   "
+                    + "WHERE link_user=id_user AND link_partition IN (     SELECT id_partition     "
+                    + "FROM users, user_link_partition, partitions, cassette_link_partition, cassettes, devices,     device_params, param_link_device     WHERE param_name='Storage' "
+                    + "AND id_param=link_param AND link_device=id_device AND cassette_device=id_device AND cassette_link_partition.link_cassette=id_cassette "
+                    + "AND cassette_link_partition.link_partition=id_partition AND"
+                    + "  user_link_partition.link_partition=id_partition AND link_user=id_user AND id_user="+idUser+" GROUP BY id_partition, partition_id   ) ) "
+                    + "GROUP BY id_job, job_id, id_task, task_types.task_type, task_status, task_sequence, note ORDER BY id_job, task_sequence";
 
             stat = conn.prepareStatement(SQLVal);
-            stat.setString(1, "Job File");
-            stat.setString(2, "Export");
-            stat.setString(3, "Storage");
-            stat.setInt(4, idUser);
+//            stat.setString(1, "Job File");
+//            stat.setString(2, "Export");
+//            stat.setString(3, "Storage");
+     //       stat.setInt(4, idUser);
 
             rs = stat.executeQuery();
 
@@ -1489,11 +1415,8 @@ public class DM {
 
             conn = DriverManager.getConnection(DBpath, DBuser, DBpassword);
 
-            SQLVal = "SELECT id_plate, plate_bcr, cassette_id, level_cassette_number "
-                    + "FROM cassettes, levels, plate_link_level, plates "
-                    + "WHERE cassette_is_safe_area=1 AND level_cassette=id_cassette AND "
-                    + "link_level=id_level AND link_plate=id_plate "
-                    + "ORDER BY cassette_id, level_cassette_number";
+            SQLVal = "SELECT id_plate, plate_bc, cassette_id, level_id FROM cassettes, levels, plates WHERE cassette_is_safe_area=1 "
+                    + "AND level_cassette=id_cassette AND link_plate=id_plate ORDER BY cassette_id, level_id";
 
             stat = conn.prepareStatement(SQLVal);
 
@@ -1501,8 +1424,7 @@ public class DM {
 
             while (rs.next()) {
 
-                historyTaskTableData.add(new ExportExceptioRacksModel(rs.getInt("id_plate"), rs.getString("plate_bcr"), rs.getInt("cassette_id"), rs.getInt("level_cassette_number")));
-
+                historyTaskTableData.add(new ExportExceptioRacksModel(rs.getInt("id_plate"), rs.getString("plate_bc"), rs.getInt("cassette_id"), rs.getInt("level_id")));
             }
 
             rs.close();
@@ -1533,10 +1455,7 @@ public class DM {
 
             conn = DriverManager.getConnection(DBpath, DBuser, DBpassword);
 
-            SQLVal = "SELECT task_property, task_property_value, task_property_date "
-                    + "FROM task_link_property, task_properties, task_property_values "
-                    + "WHERE link_task=? AND link_property=id_task_property AND "
-                    + "link_task_property=id_task_link_property";
+            SQLVal = "SELECT task_property, task_property_value FROM task_link_property, task_properties WHERE link_task=? AND link_property=id_task_property";
 
             stat = conn.prepareStatement(SQLVal);
 
@@ -1574,7 +1493,7 @@ public class DM {
         return taskPropertyModels;
     }
 
-     public List<ExportTubePickModel> getPickJobDetails(int id) {
+    public List<ExportTubePickModel> getPickJobDetails(int id) {
 
         List<ExportTubePickModel> list = new ArrayList<>();
 
@@ -1630,41 +1549,36 @@ public class DM {
 
             for (ExportTubePickModel etpm : list) {
 
-                if(!etpm.getStatus().equals("Done")){
-                // SRC
-                SQLVal = "SELECT tube_bcr, tube_x, tube_y, plate_bcr "
-                        + "FROM tube_link_task "
-                        + "INNER JOIN tubes ON tube_link_task.link_tube=id_tube AND tube_link_task.link_task=? "
-                        + "INNER JOIN tubes_link_plate ON tubes_link_plate.link_tube=id_tube "
-                        + "INNER JOIN plate_link_tube_pos ON link_pos=id_link_tube_pos "
-                        + "INNER JOIN tube_positions ON link_tube_pos=id_tube_position "
-                        + "INNER JOIN plates ON link_plate=id_plate";
-                }
-                else{                
-                SQLVal = "SELECT t.TUBE_BCR, tp.TUBE_X, tp.TUBE_Y, p.PLATE_BCR\n" +
-"FROM TUBE_LINK_TASK tlt \n" +
-"	INNER JOIN TUBES t ON ( tlt.LINK_TUBE = t.ID_TUBE  )  \n" +
-"		INNER JOIN HISTORY_LINK_TUBE hlt ON ( t.ID_TUBE = hlt.LINK_TUBE  )  \n" +
-"			INNER JOIN HISTORY h ON ( hlt.LINK_HISTORY = h.ID_HISTORY  )  \n" +
-"				INNER JOIN HISTORY_LINK_TUBE_POS hltp ON ( h.ID_HISTORY = hltp.LINK_HISTORY  )  \n" +
-"					INNER JOIN PLATE_LINK_TUBE_POS pltp ON ( hltp.LINK_TUBE_POS = pltp.ID_LINK_TUBE_POS  )  \n" +
-"						INNER JOIN PLATES p ON ( pltp.LINK_PLATE = p.ID_PLATE  )  \n" +
-"						INNER JOIN TUBE_POSITIONS tp ON ( pltp.LINK_TUBE_POS = tp.ID_TUBE_POSITION  )  \n" +
-"WHERE tlt.LINK_TASK = ?" +
-"ORDER BY h.ID_HISTORY DESC";       
+                if (!etpm.getStatus().equals("Done")) {
+                    // SRC
+                    SQLVal = "SELECT tube_bc, tube_x, tube_y, plate_bc FROM tube_link_task INNER JOIN tubes ON tube_link_task.link_tube=id_tube AND tube_link_task.link_task=? "
+                            + "INNER JOIN plate_link_tube_pos ON plate_link_tube_pos.link_tube=id_tube INNER JOIN tube_positions "
+                            + "ON link_tube_pos=id_tube_position INNER JOIN plates ON link_plate=id_plate";
+                } else {
+                    SQLVal = "SELECT t.TUBE_BC, tp.TUBE_X, tp.TUBE_Y, p.PLATE_BC\n"
+                            + "FROM TUBE_LINK_TASK tlt \n"
+                            + "	INNER JOIN TUBES t ON ( tlt.LINK_TUBE = t.ID_TUBE  )  \n"
+                            + "		INNER JOIN HISTORY_LINK_TUBE hlt ON ( t.ID_TUBE = hlt.LINK_TUBE  )  \n"
+                            + "			INNER JOIN HISTORY h ON ( hlt.LINK_HISTORY = h.ID_HISTORY  )  \n"
+                            + "				INNER JOIN HISTORY_LINK_TUBE_POS hltp ON ( h.ID_HISTORY = hltp.LINK_HISTORY  )  \n"
+                            + "					INNER JOIN PLATE_LINK_TUBE_POS pltp ON ( hltp.LINK_TUBE_POS = pltp.ID_LINK_TUBE_POS  )  \n"
+                            + "						INNER JOIN PLATES p ON ( pltp.LINK_PLATE = p.ID_PLATE  )  \n"
+                            + "						INNER JOIN TUBE_POSITIONS tp ON ( pltp.LINK_TUBE_POS = tp.ID_TUBE_POSITION  )  \n"
+                            + "WHERE tlt.LINK_TASK =? "
+                            + "ORDER BY h.ID_HISTORY DESC";
                 }
                 stat = conn.prepareStatement(SQLVal);
 
-                stat.setInt(1, etpm.getId());
+               stat.setInt(1, etpm.getId());
 
                 rs = stat.executeQuery();
 
                 while (rs.next()) {
 
-                    if (rs.getString("plate_bcr") == null) {
+                    if (rs.getString("plate_bc") == null) {
                         value = "";
                     } else {
-                        value = rs.getString("plate_bcr");
+                        value = rs.getString("plate_bc");
                     }
 
                     etpm.setSrcRackBC(value);
@@ -1673,11 +1587,11 @@ public class DM {
 
                     etpm.setSrcY(rs.getInt("tube_y"));
 
-                    if (rs.getString("tube_bcr") != null) {
+                    if (rs.getString("tube_bc") != null) {
 
-                        if (!etpm.getSrcTubeBC().equals(rs.getString("tube_bcr"))) {
+                        if (!etpm.getSrcTubeBC().equals(rs.getString("tube_bc"))) {
                             value = etpm.getSrcTubeBC();
-                            etpm.setSrcTubeBC(value + "/" + rs.getString("tube_bcr"));
+                            etpm.setSrcTubeBC(value + "/" + rs.getString("tube_bc"));
                         }
                     }
                 }
@@ -1686,9 +1600,10 @@ public class DM {
                 stat.close();
 
                 // TRG
-                SQLVal = "SELECT tube_x, tube_y, plate_bcr "
+                SQLVal = "SELECT tube_x, tube_y, plate_bc "
                         + "FROM tube_pos_link_task "
-                        + "INNER JOIN plate_link_tube_pos ON tube_pos_link_task.link_tube_pos=id_link_tube_pos AND tube_pos_link_task.link_task=? "
+                        + "INNER JOIN plate_link_tube_pos ON tube_pos_link_task.link_tube_pos=id_link_tube_pos "
+                        + "AND tube_pos_link_task.link_task=? "
                         + "INNER JOIN tube_positions ON plate_link_tube_pos .link_tube_pos=id_tube_position "
                         + "INNER JOIN plates ON link_plate=id_plate";
 
@@ -1700,10 +1615,10 @@ public class DM {
 
                 while (rs.next()) {
 
-                    if (rs.getString("plate_bcr") == null) {
+                    if (rs.getString("plate_bc") == null) {
                         value = "";
                     } else {
-                        value = rs.getString("plate_bcr");
+                        value = rs.getString("plate_bc");
                     }
 
                     etpm.setTrgRackBC(value);
@@ -1729,7 +1644,6 @@ public class DM {
 
     }
 
-    
     /*
     public List<ExportTubePickModel> getPickJobDetails(int id) {
 
@@ -1876,7 +1790,7 @@ public class DM {
         return list;
 
     }
-*/
+     */
     public List<ExportPlateModel> getExportPlateDetails(int id) {
 
         List<ExportPlateModel> list = new ArrayList<>();
@@ -1893,13 +1807,10 @@ public class DM {
 
             conn = DriverManager.getConnection(DBpath, DBuser, DBpassword);
 
-            SQLVal = "SELECT  device_id, partition_id, cassette_id, level_cassette_number, id_plate, plate_bcr "
-                    + "FROM devices, cassettes, cassette_link_partition, partition, levels, plate_link_level, "
-                    + "plates, plate_link_task,  task_src_link_trg "
-                    + "WHERE id_device=cassette_device AND link_cassette=id_cassette AND link_partition=id_partition AND "
-                    + "level_cassette=id_cassette AND link_level=id_level AND plate_link_level.link_plate=id_plate AND "
-                    + "plate_link_task.link_plate=id_plate AND plate_link_task.link_task=id_src_link_trg AND "
-                    + "task_src_link_trg.link_task=?";
+            SQLVal = "SELECT device_id, partition_id, cassette_id, level_id, id_plate, plate_bc FROM devices, cassettes, cassette_link_partition, partitions, levels, plates, plate_link_task, "
+                    + "task_src_link_trg WHERE id_device=cassette_device AND link_cassette=id_cassette AND link_partition=id_partition "
+                    + "AND level_cassette=id_cassette AND levels.link_plate=id_plate AND plate_link_task.link_plate=id_plate "
+                    + "AND plate_link_task.link_task=id_src_link_trg AND task_src_link_trg.link_task=?";
 
             stat = conn.prepareStatement(SQLVal);
 
@@ -1913,10 +1824,10 @@ public class DM {
 
             while (rs.next()) {
 
-                if (rs.getString("plate_bcr") == null) {
+                if (rs.getString("plate_bc") == null) {
                     PlateBC = "";
                 } else {
-                    PlateBC = rs.getString("plate_bcr");
+                    PlateBC = rs.getString("plate_bc");
                 }
 
                 if (rs.getString("device_id") == null) {
@@ -1931,7 +1842,7 @@ public class DM {
                     partition = rs.getString("partition_id");
                 }
 
-                exportPlateModel = new ExportPlateModel(id, rs.getInt("id_plate"), PlateBC, device, partition, rs.getInt("cassette_id"), rs.getInt("level_cassette_number"));
+                exportPlateModel = new ExportPlateModel(id, rs.getInt("id_plate"), PlateBC, device, partition, rs.getInt("cassette_id"), rs.getInt("level_id"));
 
                 list.add(exportPlateModel);
 
@@ -1967,10 +1878,8 @@ public class DM {
             conn = DriverManager.getConnection(DBpath, DBuser, DBpassword);
 
             // Rack
-            SQLVal = "SELECT plate_bcr, tybe_type_name "
-                    + "FROM plates, cassette_configuration, plate_types_link_tubes, tube_types "
-                    + "WHERE id_plate=? AND plate_conf=id_cassette_conf AND "
-                    + "link_plate_type=id_cassette_conf AND link_tube_type=id_tybe_type";
+            SQLVal = "SELECT plate_bc, tube_type_name FROM plates, rack_configuration, plate_types_link_tubes, tubes_types "
+                    + "WHERE id_plate=? AND plate_conf=id_rack_conf AND link_plate_type=id_rack_conf AND link_tube_type=id_tube_type";
 
             stat = conn.prepareStatement(SQLVal);
 
@@ -1980,10 +1889,10 @@ public class DM {
 
             while (rs.next()) {
 
-                taskPropertyModel = new TaskPropertyModel("Barcode", rs.getString("plate_bcr"));
+                taskPropertyModel = new TaskPropertyModel("Barcode", rs.getString("plate_bc"));
                 taskPropertyModels.add(taskPropertyModel);
 
-                taskPropertyModel = new TaskPropertyModel("Type", rs.getString("tybe_type_name"));
+                taskPropertyModel = new TaskPropertyModel("Type", rs.getString("tube_type_name"));
 
                 taskPropertyModels.add(taskPropertyModel);
 
@@ -1996,7 +1905,6 @@ public class DM {
             SQLVal = "SELECT job_property, job_property_value "
                     + "FROM job_link_property "
                     + "INNER JOIN job_properties ON link_property=id_job_property "
-                    + "LEFT JOIN job_property_values ON link_job_property=id_job_link_property "
                     + "WHERE link_job=?";
 
             stat = conn.prepareStatement(SQLVal);
@@ -2047,23 +1955,10 @@ public class DM {
 
             connection = DriverManager.getConnection(DBpath, DBuser, DBpassword);
 
-            SQLVal = "SELECT id_task, task_property_date "
-                    + "FROM jobs "
-                    + "INNER JOIN tasks T ON link_job=id_job "
-                    + "INNER JOIN task_link_status ON task_link_status.link_task=id_task AND "
-                    + "id_task_link_status IN "
-                    + "( "
-                    + "  SELECT MAX(id_task_link_status) "
-                    + "  FROM task_link_status "
-                    + "  WHERE link_task=T.id_task "
-                    + ") "
-                    + "INNER JOIN task_status ON link_status=id_task_status AND task_status.task_status=? "
-                    + "INNER JOIN task_link_property ON task_link_property.link_task=id_task "
-                    + "INNER JOIN task_properties ON link_property=id_task_property AND task_property=? "
-                    + "INNER JOIN task_property_values ON id_task_link_property=link_task_property AND "
-                    + "task_property_date>=? "
-                    + "WHERE done=0 "
-                    + "ORDER BY task_property_date";
+            SQLVal = "SELECT id_task, task_property_value FROM jobs INNER JOIN tasks T ON link_job=id_job INNER JOIN task_link_status ON task_link_status.link_task=id_task "
+                    + "AND id_task_link_status IN (   SELECT MAX(id_task_link_status)   FROM task_link_status   WHERE link_task=T.id_task ) "
+                    + "INNER JOIN task_status ON link_status=id_task_status AND task_status.task_status=?INNER JOIN task_link_property ON task_link_property.link_task=id_task "
+                    + "INNER JOIN task_properties ON link_property=id_task_property AND task_property=? WHERE done=0 ORDER BY task_property_value";
 
             prepstat = connection.prepareStatement(SQLVal);
 
@@ -2110,7 +2005,7 @@ public class DM {
 
             SQLVal = "SELECT task_status "
                     + "FROM tasks T, task_link_status, task_status "
-                    + "WHERE link_job=? AND link_task=id_task AND link_status=id_task_status "
+                    + "WHERE link_job="+IdJob+" AND link_task=id_task AND link_status=id_task_status "
                     + "AND id_task_link_status IN "
                     + "( "
                     + "    SELECT max(id_task_link_status) "
@@ -2120,7 +2015,7 @@ public class DM {
 
             stat = conn.prepareStatement(SQLVal);
 
-            stat.setInt(1, IdJob);
+           // stat.setInt(1, IdJob);
 
             resultset = stat.executeQuery();
 
@@ -2142,12 +2037,12 @@ public class DM {
                     + "WHERE link_task IN "
                     + "( "
                     + "  SELECT id_task FROM tasks "
-                    + "  WHERE link_job=? "
+                    + "  WHERE link_job="+IdJob+" "
                     + ")";
 
             stat = conn.prepareStatement(SQLVal);
 
-            stat.setInt(1, IdJob);
+         //  stat.setInt(1, IdJob);
             stat.executeUpdate();
 
             stat.close();
@@ -2157,11 +2052,11 @@ public class DM {
                     + "WHERE link_task IN "
                     + "( "
                     + "  SELECT id_task FROM tasks "
-                    + "  WHERE link_job=? "
+                    + "  WHERE link_job="+IdJob+" "
                     + ")";
             stat = conn.prepareStatement(SQLVal);
 
-            stat.setInt(1, IdJob);
+         //   stat.setInt(1, IdJob);
             stat.executeUpdate();
 
             stat.close();
@@ -2174,13 +2069,13 @@ public class DM {
                     + "    WHERE link_task IN "
                     + "    ( "
                     + "        SELECT id_task FROM tasks "
-                    + "        WHERE link_job=? "
+                    + "        WHERE link_job="+IdJob+" "
                     + "    ) "
                     + ")";
 
             stat = conn.prepareStatement(SQLVal);
 
-            stat.setInt(1, IdJob);
+      //      stat.setInt(1, IdJob);
             stat.executeUpdate();
 
             stat.close();
@@ -2193,24 +2088,24 @@ public class DM {
                     + "    WHERE link_task IN "
                     + "    ( "
                     + "        SELECT id_task FROM tasks "
-                    + "        WHERE link_job=? "
+                    + "        WHERE link_job="+IdJob+" "
                     + "    ) "
                     + ")";
 
             stat = conn.prepareStatement(SQLVal);
 
-            stat.setInt(1, IdJob);
+       //     stat.setInt(1, IdJob);
             stat.executeUpdate();
 
             stat.close();
 
             isExist = false;
 
-            SQLVal = "SELECT link_level "
-                    + "FROM tasks, task_src_link_trg, plate_link_task, plates, plate_link_level "
-                    + "WHERE link_job=? AND task_src_link_trg.link_task=id_task AND "
-                    + "plate_link_task.link_task=id_src_link_trg AND plate_link_task.link_plate=id_plate AND "
-                    + "plate_link_level.link_plate=id_plate";
+            SQLVal = "SELECT id_level \n" +
+"FROM tasks, task_src_link_trg, plate_link_task, plates, levels\n" +
+"WHERE link_job="+IdJob+" AND task_src_link_trg.link_task=id_task AND \n" +
+"                    plate_link_task.link_task=id_src_link_trg AND plate_link_task.link_plate=id_plate AND \n" +
+"                    levels.link_plate=id_plate";
 
             stat = conn.prepareStatement(SQLVal);
 
@@ -2228,11 +2123,10 @@ public class DM {
 
             if (!isExist) {
 
-                SQLVal = "SELECT link_bcr "
-                        + "FROM bcr_link_plate, tasks, task_src_link_trg, plate_link_task, plates "
-                        + "WHERE link_job=? AND task_src_link_trg.link_task=id_task AND "
-                        + "plate_link_task.link_task=id_src_link_trg AND plate_link_task.link_plate=id_plate AND "
-                        + "bcr_link_plate.link_plate=id_plate";
+                SQLVal = "SELECT PLATE_BC\n" +
+"               FROM tasks, task_src_link_trg, plate_link_task, plates \n" +
+"               WHERE link_job="+IdJob+" AND task_src_link_trg.link_task=id_task AND \n" +
+"               plate_link_task.link_task=id_src_link_trg AND plate_link_task.link_plate=id_plate";
 
                 stat = conn.prepareStatement(SQLVal);
 
@@ -2258,13 +2152,13 @@ public class DM {
                         + "( "
                         + "    SELECT id_plate "
                         + "    FROM tasks, task_src_link_trg, plate_link_task, plates "
-                        + "    WHERE link_job=? AND task_src_link_trg.link_task=id_task AND "
+                        + "    WHERE link_job="+IdJob+" AND task_src_link_trg.link_task=id_task AND "
                         + "    plate_link_task.link_task=id_src_link_trg AND plate_link_task.link_plate=id_plate "
                         + ")";
 
                 stat = conn.prepareStatement(SQLVal);
 
-                stat.setInt(1, IdJob);
+       //         stat.setInt(1, IdJob);
                 stat.executeUpdate();
 
                 stat.close();
@@ -2279,13 +2173,13 @@ public class DM {
                     + "    WHERE link_task IN "
                     + "    ( "
                     + "        SELECT id_task FROM tasks "
-                    + "        WHERE link_job=? "
+                    + "        WHERE link_job="+IdJob+" "
                     + "    ) "
                     + ")";
 
             stat = conn.prepareStatement(SQLVal);
 
-            stat.setInt(1, IdJob);
+        //    stat.setInt(1, IdJob);
             stat.executeUpdate();
 
             stat.close();
@@ -2298,13 +2192,13 @@ public class DM {
                     + "    WHERE link_task IN "
                     + "    ( "
                     + "        SELECT id_task FROM tasks "
-                    + "        WHERE link_job=? "
+                    + "        WHERE link_job="+IdJob+" "
                     + "    ) "
                     + ")";
 
             stat = conn.prepareStatement(SQLVal);
 
-            stat.setInt(1, IdJob);
+          //  stat.setInt(1, IdJob);
             stat.executeUpdate();
 
             stat.close();
@@ -2317,13 +2211,13 @@ public class DM {
                     + "    WHERE link_task IN "
                     + "    ( "
                     + "        SELECT id_task FROM tasks "
-                    + "        WHERE link_job=? "
+                    + "        WHERE link_job="+IdJob+" "
                     + "    ) "
                     + ")";
 
             stat = conn.prepareStatement(SQLVal);
 
-            stat.setInt(1, IdJob);
+     //       stat.setInt(1, IdJob);
             stat.executeUpdate();
 
             stat.close();
@@ -2333,12 +2227,12 @@ public class DM {
                     + " WHERE link_task IN "
                     + "( "
                     + "   SELECT id_task FROM tasks "
-                    + "   WHERE link_job=? "
+                    + "   WHERE link_job="+IdJob+" "
                     + ")";
 
             stat = conn.prepareStatement(SQLVal);
 
-            stat.setInt(1, IdJob);
+        //    stat.setInt(1, IdJob);
             stat.executeUpdate();
 
             stat.close();
@@ -2351,13 +2245,13 @@ public class DM {
                     + "    WHERE link_task IN "
                     + "    ( "
                     + "        SELECT id_task FROM tasks "
-                    + "        WHERE link_job=? "
+                    + "        WHERE link_job="+IdJob+" "
                     + "    ) "
                     + ")";
 
             stat = conn.prepareStatement(SQLVal);
 
-            stat.setInt(1, IdJob);
+        //    stat.setInt(1, IdJob);
             stat.executeUpdate();
 
             stat.close();
@@ -2367,12 +2261,12 @@ public class DM {
                     + "WHERE link_task IN "
                     + "( "
                     + "    SELECT id_task FROM tasks "
-                    + "    WHERE link_job=? "
+                    + "    WHERE link_job="+IdJob+" "
                     + ")";
 
             stat = conn.prepareStatement(SQLVal);
 
-            stat.setInt(1, IdJob);
+       //     stat.setInt(1, IdJob);
             stat.executeUpdate();
 
             stat.close();
@@ -2486,151 +2380,150 @@ public class DM {
         }
 
     }
-		 public boolean canSetSequence(int jobId){
+
+    public boolean canSetSequence(int jobId) {
 
         PreparedStatement stat = null;
 
         ResultSet resultset = null;
         Connection conn;
- 
+
         try {
 
             conn = DriverManager.getConnection(DBpath, DBuser, DBpassword);
 
-            stat = conn.prepareStatement("SELECT job_types.job_type " +
-                "FROM jobs, job_types " +
-                "WHERE id_job=? AND jobs.job_type=id_job_type");
+            stat = conn.prepareStatement("SELECT job_types.job_type "
+                    + "FROM jobs, job_types "
+                    + "WHERE id_job=? AND jobs.job_type=id_job_type");
 
             stat.setInt(1, jobId);
-            
+
             resultset = stat.executeQuery();
-            
+
             String jobType = "";
-            
-            while (resultset.next()){
-                
+
+            while (resultset.next()) {
+
                 jobType = resultset.getString(1);
-                
+
                 break;
-                
+
             }
-            
-            if (!jobType.equals("Job File")){
-                
+
+            if (!jobType.equals("Job File")) {
+
                 resultset.close();
                 stat.close();
-                conn.close();                
-                
+                conn.close();
+
                 return false;
             }
-            
-            
-            stat = conn.prepareStatement("SELECT task_status " +
-                    "FROM tasks T, task_link_status, task_status " +
-                    "WHERE link_job=? AND link_task=id_task AND link_status=id_task_status " +
-                    "AND id_task_link_status IN " +
-                    "( " +
-                    "    SELECT max(id_task_link_status) " +
-                    "    FROM task_link_status " +
-                    "    WHERE link_task=T.id_task " +
-                    ")");    
-            
+
+            stat = conn.prepareStatement("SELECT task_status "
+                    + "FROM tasks T, task_link_status, task_status "
+                    + "WHERE link_job=? AND link_task=id_task AND link_status=id_task_status "
+                    + "AND id_task_link_status IN "
+                    + "( "
+                    + "    SELECT max(id_task_link_status) "
+                    + "    FROM task_link_status "
+                    + "    WHERE link_task=T.id_task "
+                    + ")");
+
             stat.setInt(1, jobId);
-                                
+
             resultset = stat.executeQuery();
-            
-            while(resultset.next()){
-                
-                if (resultset.getString("task_status").equals("Running")){
-                    
+
+            while (resultset.next()) {
+
+                if (resultset.getString("task_status").equals("Running")) {
+
                     resultset.close();
                     stat.close();
-                    conn.close();                
-                
-                    return false;                    
-                    
+                    conn.close();
+
+                    return false;
+
                 }
-                
-            }             
-            
-            stat = conn.prepareStatement("SELECT task_types.task_type, task_status.task_status " +
-                "FROM tasks T, task_link_status, task_status, jobs, task_types, job_types " +
-                "WHERE link_job=? AND done=0 AND job_types.job_type=? AND " +
-                "T.task_type=task_types.id_task_type AND " +
-            
-                "link_task=id_task AND link_status=id_task_status " +
-                "AND id_task_link_status IN " +
-                "( " +
-                "    SELECT max(id_task_link_status) " +
-                "    FROM task_link_status " +
-                "    WHERE link_task=T.id_task " +
-                ")");    
-            
-            stat.setInt(1, jobId);
-            stat.setString(2, "Job File");
-                        
+
+            }
+
+            stat = conn.prepareStatement("SELECT task_types.task_type, task_status.task_status "
+                    + "FROM tasks T, task_link_status, task_status, jobs, task_types, job_types "
+                    + "WHERE link_job="+jobId+" AND done=0 AND job_types.job_type='Job File' AND "
+                    + "T.task_type=task_types.id_task_type AND "
+                    + "link_task=id_task AND link_status=id_task_status "
+                    + "AND id_task_link_status IN "
+                    + "( "
+                    + "    SELECT max(id_task_link_status) "
+                    + "    FROM task_link_status "
+                    + "    WHERE link_task=T.id_task "
+                    + ")");
+
+//            stat.setInt(1, jobId);
+//            stat.setString(2, "Job File");
+
             resultset = stat.executeQuery();
-            
+
             boolean isExists = false;
-            
-            while(resultset.next()){
-            
-                System.out.println(resultset.getString(1) +" - "+ resultset.getString(2));
-                
-                if (resultset.getString(1).equals("Job File") && resultset.getString(2).equals("Done")){
-                    
+
+            while (resultset.next()) {
+
+                System.out.println(resultset.getString(1) + " - " + resultset.getString(2));
+
+                if (resultset.getString(1).equals("Job File") && resultset.getString(2).equals("Done")) {
+
                     isExists = true;
-                    
-                } else if (resultset.getString(1).equals("Job File") && resultset.getString(2).equals("Error")){
-                    
+
+                } else if (resultset.getString(1).equals("Job File") && resultset.getString(2).equals("Error")) {
+
                     isExists = true;
-                    
-                } else if (resultset.getString(1).equals("Job File") && resultset.getString(2).equals("Canceled")){
-                    
+
+                } else if (resultset.getString(1).equals("Job File") && resultset.getString(2).equals("Canceled")) {
+
                     isExists = true;
-                    
-                } else if (resultset.getString(1).equals("Job File") && resultset.getString(2).equals("Halted")){
-                    
+
+                } else if (resultset.getString(1).equals("Job File") && resultset.getString(2).equals("Halted")) {
+
                     isExists = true;
-                    
-                } else if (resultset.getString(1).equals("Job File") && resultset.getString(2).equals("Paused")){
-                    
+
+                } else if (resultset.getString(1).equals("Job File") && resultset.getString(2).equals("Paused")) {
+
                     isExists = true;
-                    
-                } else if (resultset.getString(1).equals("Job File") && resultset.getString(2).equals("Stopped")){
-                    
+
+                } else if (resultset.getString(1).equals("Job File") && resultset.getString(2).equals("Stopped")) {
+
                     isExists = true;
-                    
-                }  
-            
-                if (isExists){
+
+                }
+
+                if (isExists) {
                     break;
                 }
-                
-            }      
-            
+
+            }
+
             resultset.close();
-            stat.close();            
-            
-            if (isExists){
-             
-                conn.close();                
-                
-                return false;                 
-                
-            }            
-            
-            conn.close();            
+            stat.close();
+
+            if (isExists) {
+
+                conn.close();
+
+                return false;
+
+            }
+
+            conn.close();
 
         } catch (Exception E) {
             System.out.println("Error canSetSequence: " + E.getMessage());
             log.error("canSetSequence: " + E.getMessage());
-        }        
-        
+        }
+
         return true;
-        
+
     }
-    
+
     public int getJobSequence(int idJob) {
 
         PreparedStatement stat = null;
@@ -2640,14 +2533,14 @@ public class DM {
         Connection conn;
 
         int sequence = 0;
-        
+
         try {
 
             conn = DriverManager.getConnection(DBpath, DBuser, DBpassword);
 
             stat = conn.prepareStatement("SELECT job_sequence FROM jobs WHERE id_job=?");
-            stat.setInt(1, idJob);            
-            
+            stat.setInt(1, idJob);
+
             resultset = stat.executeQuery();
 
             while (resultset.next()) {
@@ -2666,4 +2559,77 @@ public class DM {
         return sequence;
 
     }
-}									 
+
+    public int getPickID(String idJob) {
+     
+        
+        PreparedStatement stat = null;
+
+        ResultSet resultset = null;
+
+        Connection conn;
+
+        int idPick = 0;
+
+        try {
+
+            conn = DriverManager.getConnection(DBpath, DBuser, DBpassword);
+
+            stat = conn.prepareStatement("select id_task, ID_JOB from tasks inner join jobs on tasks.LINK_JOB = jobs.ID_JOB where id_job =? and task_type = 10");
+            stat.setInt(1, Integer.parseInt(idJob));
+
+            resultset = stat.executeQuery();
+
+            while (resultset.next()) {
+                idPick = resultset.getInt(1);
+            }
+
+            resultset.close();
+            stat.close();
+            conn.close();
+
+        } catch (Exception E) {
+            System.out.println("Error getPickID: " + E.getMessage());
+            log.error("getPickID: " + E.getMessage());
+        }
+
+        return idPick;
+        
+    }
+
+    public String getjobId(int idTask) {
+         PreparedStatement stat = null;
+
+        ResultSet resultset = null;
+
+        Connection conn;
+
+        int idPick = 0;
+
+        try {
+
+            conn = DriverManager.getConnection(DBpath, DBuser, DBpassword);
+
+            stat = conn.prepareStatement("select  ID_JOB from tasks inner join jobs on tasks.LINK_JOB = jobs.ID_JOB where id_task=?");
+            stat.setInt(1, idTask);
+
+            resultset = stat.executeQuery();
+
+            while (resultset.next()) {
+                idPick = resultset.getInt(1);
+            }
+
+            resultset.close();
+            stat.close();
+            conn.close();
+
+        } catch (Exception E) {
+            System.out.println("Error getPickID: " + E.getMessage());
+            log.error("getPickID: " + E.getMessage());
+        }
+
+        return Integer.toString(idPick);
+        
+    }
+
+}

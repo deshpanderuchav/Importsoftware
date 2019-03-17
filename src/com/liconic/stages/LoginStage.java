@@ -179,7 +179,7 @@ public class LoginStage extends Stage {
 
                         System.out.println("Login: User name=" + LicUserName + ". - Password=" + LicPassword + ".");
 
-                        dm = new DM(DB_DRIVER, DB_URL, LicUserName, LicPassword, log);
+                        dm = new DM(DB_DRIVER, DB_URL, "sa", "test", log);
 
                         user = dm.getUser(tfKIWIName.getText());
 

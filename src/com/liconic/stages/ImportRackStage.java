@@ -96,7 +96,7 @@ public class ImportRackStage extends Stage {
         hbBarcode.setPadding(new Insets(5, 5, 5, 5));
         hbBarcode.setAlignment(Pos.CENTER_LEFT);
 
-        lbBarcode = new Label("Brcode: ");
+        lbBarcode = new Label("Barcode: ");
         lbBarcode.setPrefWidth(60);
 
         lbRackBarcode = new Label("");
@@ -216,7 +216,7 @@ public class ImportRackStage extends Stage {
 
         setTitle("Importing of new rack");
 
-        scene = new Scene(root, 400, 220);
+        scene = new Scene(root, 500, 300);
 
         setScene(scene);
 
@@ -248,7 +248,7 @@ public class ImportRackStage extends Stage {
         for (PartitionTubeTypes ptt : PartitionTubeTypesList) {
 
             for (RackTubeType rtt : ptt.getTubesTypes()) {
-
+System.out.println(rtt.getTubeTypeName());
                 if (rtt.getTubeTypeID() != 0) {
                     cbLabware.getItems().add(rtt.getTubeTypeName());
                 }

@@ -1,11 +1,8 @@
 package com.liconic.stages;
 
-import com.liconic.binding.stx.STXCommand;
-import com.liconic.binding.stx.STXRequest;
-import com.liconic.binding.sys.Cmd;
 import com.liconic.binding.sys.ObjectFactory;
-import com.liconic.binding.sys.Sys;
-import com.liconic.rest.client.ExportRackClient;
+import com.liconic.binding.stx.STXRequest;
+import com.liconic.rest.client.ExportJobClient;
 
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -25,9 +22,8 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.WindowEvent;
 import org.apache.logging.log4j.Logger;
-import org.eclipse.persistence.sessions.coordination.Command;
 
-public class ExportRackStage extends Stage {
+public class ExportJobStage extends Stage {
 
     private Scene scene;
 
@@ -43,29 +39,29 @@ public class ExportRackStage extends Stage {
     private ProgressIndicator progressIndicator;
     private ImportStage importStage;
 
-    private int CmdId = 0;
-    private int IdRack = 0;
-    private int idPick =0;
+    private int cmdId = 0;
+    private String jobId;
+    private String plateBCR;
 
     private Logger log;
-    private String WebServiceUri;
+    private String webServiceUri;
 
     private boolean isClose = false;
 
     private ObjectFactory of;
 
-    public ExportRackStage(ImportStage importStage, String WebServiceUri, int CmdId, int idRack, Logger log, int idPick) {
+    public ExportJobStage(ImportStage importStage, String webServiceUri, int cmdId, String jobId, String plateBCR, Logger log) {
 
         this.importStage = importStage;
         this.log = log;
-        this.WebServiceUri = WebServiceUri;
-        this.CmdId = CmdId;
-        this.IdRack = idRack;
-        this.idPick = idPick;
+        this.webServiceUri = webServiceUri;
+        this.cmdId = cmdId;
+        this.jobId = jobId;
+        this.plateBCR = plateBCR;
 
         of = new ObjectFactory();
 
-        log.info("Open Export Rack window Task=" + CmdId);
+        log.info("Open Export Job window Task=" + cmdId);
 
         initStyle(StageStyle.UTILITY);
 
@@ -82,40 +78,30 @@ public class ExportRackStage extends Stage {
         hBoxButton.getChildren().add(btnClose);
 
         hBoxIndicator = new HBox();
-
         hBoxIndicator.setAlignment(Pos.CENTER);
-
         progressIndicator = new ProgressIndicator();
-
         hBoxIndicator.setPrefSize(100, 100);
-
         hBoxIndicator.getChildren().add(progressIndicator);
 
         hBoxInfo = new HBox();
-
         hBoxInfo.setAlignment(Pos.CENTER_LEFT);
-
         lbInfo = new Label("Apply Export command...");
-
         hBoxInfo.getChildren().add(lbInfo);
 
         root.setCenter(hBoxInfo);
-
         root.setLeft(hBoxIndicator);
-
         root.setBottom(hBoxButton);
 
         setOnShown(new EventHandler<WindowEvent>() {
-
             @Override
             public void handle(WindowEvent t) {
                 RunExport();
             }
-
         });
 
         scene = new Scene(root, 320, 150);
-        setTitle("Export Rack");
+
+        setTitle("Export Job");
         setScene(scene);
 
         btnClose.setOnAction(new EventHandler<ActionEvent>() {
@@ -129,10 +115,9 @@ public class ExportRackStage extends Stage {
             @Override
             public void handle(WindowEvent t) {
                 isClose = true;
-                importStage.setExportRackStage(null);
+                importStage.setExportJobStage(null);
             }
         });
-
     }
 
     public void RunExport() {
@@ -147,25 +132,20 @@ public class ExportRackStage extends Stage {
                     @Override
                     public void run() {
                         try {
-                            ExportRackClient exportClient = new ExportRackClient(WebServiceUri, log);
+                            ExportJobClient exportClient = new ExportJobClient(webServiceUri, log);
 
-                            STXRequest sys = exportClient.runExportRack(CmdId, IdRack, importStage.getUser().getLogin(),idPick);
+                            STXRequest response = exportClient.runExportJob(jobId, plateBCR, importStage.getUser().getLogin());
 
-                            STXCommand cmd = sys.getCommand();
-
-                            if (CmdId == 0) {
-                                try {
-                                    CmdId = Integer.valueOf(cmd.getID());
-                                } catch (Exception E) {
-                                }
-                                
-                            } else {
-                                cmd.setID(String.valueOf(CmdId));
+                            String status = "";
+                            String errorMsg = "";
+                            if ((null != response) && (null != response.getAnswer())) {
+                                status = response.getAnswer().getStatus();
+                                errorMsg = response.getAnswer().getErrMsg();
                             }
 
-                            if (sys.getAnswer().getStatus().equals("ERR")) {
+                            if ("ERR".equals(status)) {
                                 // Change Icon
-                                lbInfo.setText(sys.getAnswer().getErrMsg());
+                                lbInfo.setText(errorMsg);
                                 lbInfo.setTextFill(Color.RED);
 
                                 ImageView imageView = new ImageView(new Image("images/warning-icon.png"));
@@ -176,13 +156,13 @@ public class ExportRackStage extends Stage {
                                 btnClose.setDisable(false);
 
                             } else {
-                                lbInfo.setText("Run Export command...");
-                                CmdId = Integer.valueOf(cmd.getID());
+                                lbInfo.setText("Export job ran successfully!");
+                                hBoxIndicator.getChildren().clear();
+                                btnClose.setDisable(false);
                             }
 
-                        } catch (Exception E) {
-                            lbInfo.setText("Error: " + E.getMessage());
-
+                        } catch (Exception e) {
+                            lbInfo.setText("Error: " + e.getMessage());
                             lbInfo.setTextFill(Color.RED);
 
                             ImageView imageView = new ImageView(new Image("images/warning-icon.png"));
@@ -195,12 +175,13 @@ public class ExportRackStage extends Stage {
                     }
                 });
             }
+
         }).start();
     }
 
-    public void SetCmdReply(int IdCmd, String CmdResult, String CmdValue) {
+    public void SetCmdReply(int idCmd, String cmdResult, String cmdValue) {
 
-        if (IdCmd == CmdId) {
+        if (idCmd == cmdId) {
 
             new Thread(new Runnable() {
 
@@ -211,15 +192,13 @@ public class ExportRackStage extends Stage {
 
                         @Override
                         public void run() {
-
                             ImageView imageView;
 
-                            lbInfo.setText(CmdValue);
+                            lbInfo.setText(cmdValue);
 
-                            if (CmdResult.equals("Error")) {
+                            if (cmdResult.equals("Error")) {
                                 lbInfo.setTextFill(Color.RED);
                                 imageView = new ImageView(new Image("images/warning-icon.png"));
-
                             } else {
                                 imageView = new ImageView(new Image("images/info-icon.png"));
                                 AutoClose();
@@ -232,6 +211,7 @@ public class ExportRackStage extends Stage {
                         }
                     });
                 }
+
             }).start();
         }
     }
@@ -248,7 +228,7 @@ public class ExportRackStage extends Stage {
                     @Override
                     public void run() {
                         int count = 0;
-                        
+
                         while (!isClose) {
                             try {
                                 Thread.sleep(100);
@@ -258,7 +238,7 @@ public class ExportRackStage extends Stage {
                                     break;
                                 }
 
-                            } catch (Exception E) {
+                            } catch (Exception e) {
                             }
                         }
 
@@ -266,13 +246,13 @@ public class ExportRackStage extends Stage {
                             if (!isClose) {
                                 close();
                             }
-                            
-                        } catch (Exception E) {
+                        } catch (Exception e) {
 
                         }
                     }
                 });
             }
+
         }).start();
     }
 

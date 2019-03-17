@@ -1,6 +1,5 @@
 package com.liconic.db;
 
-import com.liconic.user.User;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -49,35 +48,22 @@ public class DBTimer {
 
             connection = DriverManager.getConnection(DBpath, DBuser, DBpassword);
 
-            SQLVal = "SELECT id_task, task_property_date "
-                    + "FROM jobs "
-                    + "INNER JOIN tasks T ON link_job=id_job "
-                    + "INNER JOIN task_link_status ON task_link_status.link_task=id_task AND "
-                    + "id_task_link_status IN "
-                    + "( "
-                    + "  SELECT MAX(id_task_link_status) "
-                    + "  FROM task_link_status "
-                    + "  WHERE link_task=T.id_task "
-                    + ") "
-                    + "INNER JOIN task_status ON link_status=id_task_status AND task_status.task_status=? "
-                    + "INNER JOIN task_link_property ON task_link_property.link_task=id_task "
-                    + "INNER JOIN task_properties ON link_property=id_task_property AND task_property=? "
-                    + "INNER JOIN task_property_values ON id_task_link_property=link_task_property AND "
-                    + "task_property_date>=? "
-                    + "WHERE done=0 "
-                    + "ORDER BY task_property_date";
+            SQLVal = "SELECT id_task, task_property_value FROM jobs INNER JOIN tasks T "
+                    + "ON link_job=id_job INNER JOIN task_link_status ON task_link_status.link_task=id_task AND id_task_link_status IN (   SELECT MAX(id_task_link_status)   "
+                    + "FROM task_link_status   WHERE link_task=T.id_task ) INNER JOIN task_status ON link_status=id_task_status AND task_status.task_status='Pending'"
+                    + "INNER JOIN task_link_property ON task_link_property.link_task=id_task INNER JOIN task_properties ON link_property=id_task_property AND task_property='Date To Run'"
+                    + "WHERE done=0 ORDER BY task_property_value";
 
             prepstat = connection.prepareStatement(SQLVal);
 
-            prepstat.setString(1, "Pending");
-            prepstat.setString(2, "Date to run");
-            prepstat.setTimestamp(3, new Timestamp(new Date().getTime()));
+//            prepstat.setString(0, "Pending");
+//            prepstat.setString(1, "Date to run");
 
             resultset = prepstat.executeQuery();
 
             while (resultset.next()) {
 
-                Date date = new Date(resultset.getTimestamp("task_property_date").getTime());
+                Date date = new Date(resultset.getTimestamp("task_property_value").getTime());
                 res = df.format(date);
 
                 break;
